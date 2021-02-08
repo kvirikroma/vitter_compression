@@ -1,0 +1,5 @@
+vitter
+*.o
+*.deb
+.vscode
+.kdbg*
