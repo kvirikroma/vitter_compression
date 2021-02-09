@@ -1,3 +1,5 @@
+%include "dynamic_array_include_internal.asm"
+
 extern realloc
 extern free
 extern posix_memalign
@@ -5,33 +7,17 @@ extern exit
 
 extern check_pointer_after_malloc
 
-global array_init              ;*initializes dynamic array
-global array_delete            ;deletes dynamic array
-global array_delete_each       ;frees memory using each item as pointer
-global array_append_value      ;*appends value to the end
-global array_pop_value         ;returns value from the end and decreases length
-global array_get_by_index      ;returns address of item or nullptr if it doesn't exist
-global array_shrink_to_fit     ;*reallocates minimal memory size to contain data
-global array_get_size          ;returns size of array in O(1) time
-global array_extend            ;*extends array by the items of other array
-global array_extend_from_mem   ;*extends array by the qwords from mem
-global array_clear             ;zeroes array length
-global array_to_usual          ;*casts the dynamic array to usual array in-place
-;functions that marked with "*" return a pointer to allocated memory
-;look function definition to see some details
-
-
-INIT_ALIGNMENT equ 16
-INIT_LENGTH    equ 2 * INIT_ALIGNMENT
-ITEM_SIZE      equ 8
-LOG2_ITEM_SIZE equ 3
-
-struc dynamic
-    ;structure of dynamic array
-    .length resq 1    ;count of qword values
-    .allocated resq 1 ;maximum qword values
-    .data resq 0      ;offset of data (it is of course not zero, but some varying number)
-endstruc
+global array_init
+global array_delete
+global array_delete_each
+global array_append_value
+global array_pop_value
+global array_get_by_index
+global array_shrink_to_fit
+global array_extend
+global array_extend_from_mem
+global array_clear
+global array_to_usual
 
 
 segment .rodata
@@ -43,7 +29,7 @@ segment .text
         ;generates array with 'length' and 'allocated' in first 2 items
         ;'length' does not include first 2 elements but the 'allocated' does
         ;'length' is needed for counting items in the array
-        ;(look for "struc dynamic" in this file to understand better)
+        ;(look for "struc array" in this project to understand better)
         push rbp
         mov rbp, rsp
 
@@ -64,8 +50,8 @@ segment .text
             call exit
         mem_ok:
         pop rax
-        mov qword [rax+dynamic.length], 0
-        mov qword [rax+dynamic.allocated], INIT_LENGTH
+        mov qword [rax+array.length], 0
+        mov qword [rax+array.allocated], INIT_LENGTH
 
         leave
         ret
@@ -87,7 +73,7 @@ segment .text
         mov rbp, rsp
 
         push rdi
-        mov rcx, [rdi+dynamic.length]
+        mov rcx, [rdi+array.length]
         cmp rcx, 0
         jz not_deleting
         
@@ -95,7 +81,7 @@ segment .text
             mov rdi, rcx
             dec rdi
             shl rdi, LOG2_ITEM_SIZE
-            add rdi, dynamic.data
+            add rdi, array.data
             add rdi, [rsp]
             mov rdi, [rdi]
             push rcx
@@ -105,7 +91,7 @@ segment .text
         not_deleting:
 
         pop rax
-        mov qword [rax+dynamic.length], 0
+        mov qword [rax+array.length], 0
         
         leave
         ret
@@ -116,8 +102,8 @@ segment .text
         push rbp
         mov rbp, rsp
 
-        mov r8, [rdi+dynamic.length]
-        mov r9, [rdi+dynamic.allocated]
+        mov r8, [rdi+array.length]
+        mov r9, [rdi+array.allocated]
         mov rsi, r9
         sub r9, 2
         sub r9, r8
@@ -126,7 +112,7 @@ segment .text
         
         jg enough_space
             shl rsi, 1
-            mov [rdi+dynamic.allocated], rsi
+            mov [rdi+array.allocated], rsi
             shl rsi, LOG2_ITEM_SIZE
             call realloc
             
@@ -152,11 +138,11 @@ segment .text
         call array_check_space
         pop rsi
         mov r8, rax
-        add r8, dynamic.data
-        mov r9, [rax+dynamic.length]
+        add r8, array.data
+        mov r9, [rax+array.length]
         mov r10, r9
         inc r10
-        mov [rax+dynamic.length], r10
+        mov [rax+array.length], r10
         shl r9, LOG2_ITEM_SIZE
         add r8, r9
         mov [r8], rsi
@@ -168,7 +154,7 @@ segment .text
         ;param rdi - address of array
         ;param rsi - index
         ;returns address of item or nullptr if it doesn't exist
-        mov rax, [rdi+dynamic.length]
+        mov rax, [rdi+array.length]
         dec rax
         cmp rax, rsi
         jl return_nullptr_by_index
@@ -177,7 +163,7 @@ segment .text
             mov rax, rsi
             shl rax, LOG2_ITEM_SIZE
             add rax, rdi
-            add rax, dynamic.data
+            add rax, array.data
             ret
         return_nullptr_by_index:
         xor eax, eax
@@ -189,7 +175,7 @@ segment .text
         push rbp
         mov rbp, rsp
 
-        mov rdx, [rdi+dynamic.length]
+        mov rdx, [rdi+array.length]
         cmp rdx, 0
         jng nothing_to_pop
             dec rdx
@@ -199,7 +185,7 @@ segment .text
             call array_get_by_index
             pop rdi
             pop rdx
-            mov [rdi+dynamic.length], rdx
+            mov [rdi+array.length], rdx
             mov rax, [rax]
             jmp end_pop
         nothing_to_pop:
@@ -215,19 +201,13 @@ segment .text
         push rbp
         mov rbp, rsp
 
-        mov rsi, [rdi+dynamic.length]
+        mov rsi, [rdi+array.length]
         add rsi, 2
-        mov [rdi+dynamic.allocated], rsi
+        mov [rdi+array.allocated], rsi
         shl rsi, LOG2_ITEM_SIZE
         call realloc
         
         leave
-        ret
-
-    array_get_size:
-        ;param rdi - address of array
-        ;returns array size
-        mov rax, [rdi+dynamic.length]
         ret
     
     array_extend:
@@ -237,8 +217,8 @@ segment .text
         push rbp
         mov rbp, rsp
 
-        mov rdx, [rsi+dynamic.length]
-        add rsi, dynamic.data
+        mov rdx, [rsi+array.length]
+        add rsi, array.data
         call array_extend_from_mem
        
         leave
@@ -260,7 +240,7 @@ segment .text
         push rdi
         push rdx
         mov rsi, rdx
-        add rsi, [rdi+dynamic.allocated]
+        add rsi, [rdi+array.allocated]
 
         shr rsi, 1
         jnc not_incrementing
@@ -269,12 +249,12 @@ segment .text
         shl rsi, 1
 
         mov rax, rdi
-        mov rcx, [rdi+dynamic.allocated]
+        mov rcx, [rdi+array.allocated]
         sub rcx, 2
-        sub rcx, [rdi+dynamic.length]
+        sub rcx, [rdi+array.length]
         cmp rcx, rdx
         jnl not_reallocating
-            mov [rdi+dynamic.allocated], rsi
+            mov [rdi+array.allocated], rsi
             shl rsi, LOG2_ITEM_SIZE
             call realloc
         not_reallocating:
@@ -285,14 +265,14 @@ segment .text
         push rax
         mov rdi, rax
 
-        mov r8, [rdi+dynamic.length]
+        mov r8, [rdi+array.length]
         mov r9, r8
         add r8, rcx
-        mov [rdi+dynamic.length], r8
+        mov [rdi+array.length], r8
         shl r9, LOG2_ITEM_SIZE
 
         add rdi, r9
-        add rdi, dynamic.data
+        add rdi, array.data
         rep movsq
         pop rax
         jmp exit_extend
@@ -305,7 +285,7 @@ segment .text
 
     array_clear:
         ;param rdi - address of array
-        mov qword [rdi+dynamic.length], 0
+        mov qword [rdi+array.length], 0
         ret
     
     array_to_usual:
@@ -318,8 +298,8 @@ segment .text
 
         push rdi
         mov rsi, rdi
-        add rsi, dynamic.data
-        mov rcx, [rdi+dynamic.length]
+        add rsi, array.data
+        mov rcx, [rdi+array.length]
         mov rax, rcx
         shl rax, LOG2_ITEM_SIZE
         mov qword [rax+rsi], 0

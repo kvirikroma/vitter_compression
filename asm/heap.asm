@@ -2,33 +2,46 @@ extern array_append_value
 extern array_pop_value
 extern array_get_by_index
 extern array_get_size
+extern array_init
+extern array_delete
 
-global heap_get_top ;returns top value of heap
-global heap_append  ;appends value to the heap
-global heap_pop     ;pops top value from the heap
-;look function definition to see some details
+global heap_get_top
+global heap_push
+global heap_pop
+global heap_init
+global heap_delete
 
-;This heap is just basically a set of functions
-;that wraps around the dynamic array structure.
-
-;Some functions take parameter with function address.
-;Requirements to that function in parameter (for min-heap):
-;1. Takes first item in rdi and second in rsi
-;2. Returns 0 if they are equal.
-;3. Returns -1 if parameter in rdi is less than one in rsi.
-;4. Returns 1 if parameter in rdi is greater than one in rsi.
-;5. You can change theese values to the opposite ones to get a max-heap
 
 segment .text
+    heap_init:
+        ;param rdi - pointer to uninitialized heap instance
+        ;param rsi - function that compares values
+        mov [rdi+heap.comparator], rsi
+        push rdi
+        call array_init
+        pop rdi
+        mov [rdi+heap.data], rax
+        ret
+
+    heap_delete:
+        ;param rdi - heap
+        mov rdi, [rdi+heap.data]
+        call array_delete
+        ret
+
     heap_get_top:
         ;param rdi - address of heap
         ;returns top value of heap
         xor esi, esi
+        mov rdi, [rdi+heap.data]
         call array_get_by_index
-        mov rax, [rax]
+        cmp rax, 0
+        je hgt_ret
+            mov rax, [rax]
+        hgt_ret:
         ret
 
-    heap_append:
+    heap_push:
         ;param rdi - address of heap
         ;param rsi - address of function that compares values
         ;param rdx - value to append
