@@ -12,8 +12,8 @@ typedef struct
     struct adaptive_node* parent;
     struct adaptive_node* left;
     struct adaptive_node* right;
+    uint64_t weight;
     uint8_t value;
-    uint8_t weight;
     bool is_nyt;
 }
 adaptive_node;
@@ -27,7 +27,7 @@ typedef enum
 adaptive_node_type;
 
 
-extern adaptive_node* adaptive_node_init(bool, uint8_t, adaptive_node*, adaptive_node*, adaptive_node*, uint8_t);
+extern adaptive_node* adaptive_node_init(bool, uint64_t, adaptive_node*, adaptive_node*, adaptive_node*, uint8_t);
 extern void adaptive_node_delete(adaptive_node*);
 extern void adaptive_node_exchange(adaptive_node*, adaptive_node*);
 extern adaptive_node_type adaptive_node_get_type(adaptive_node*);

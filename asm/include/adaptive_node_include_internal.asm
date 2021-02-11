@@ -6,12 +6,12 @@ struc adaptive_node
     .parent resq 1
     .left   resq 1
     .right  resq 1
+    .weight resq 1
     .value  resb 1
-    .weight resb 1
     .is_nyt resb 1
 endstruc
 
-ADAPTIVE_NODE_SIZE equ 27
+ADAPTIVE_NODE_SIZE equ 34
 
 NODE_TYPE_LEAF equ 0
 NODE_TYPE_INTERNAL equ 1

@@ -40,7 +40,7 @@ segment .text
         mov rdi, rax
         call check_pointer_after_malloc
         mov r10, [rbp-16]
-        mov [rax+adaptive_node.weight], r10b
+        mov [rax+adaptive_node.weight], r10
         mov rdi, [rbp-8]
         cmp rdi, 0
         jne setting_values
