@@ -2,13 +2,15 @@
 #define ADAPTIVE_TREE_H
 
 #include "adaptive_node.h"
+#include "deque.h"
 
 
 typedef struct
 {
     adaptive_node* nyt_node;
     adaptive_node* root;
-    adaptive_node** nodes_map;
+    adaptive_node** leaves_map;  // key is the value
+    deque* weights_map;  // array<deque<adaptive_node*>>
 }
 adaptive_tree;
 

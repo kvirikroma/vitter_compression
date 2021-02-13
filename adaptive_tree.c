@@ -6,9 +6,6 @@
 #include "include/utils.h"
 
 
-#define NODES_MAP_SIZE (256 * sizeof(adaptive_node*))
-
-
 static int64_t max(uint8_t items_count, ...)
 {
     va_list args;
@@ -31,7 +28,7 @@ static void remove_node_in_traversal(adaptive_node* node, bit_buffer* path, void
     adaptive_tree* tree = (adaptive_tree*)params;
     if (adaptive_node_get_type(node) == NODE_TYPE_LEAF)
     {
-        tree->nodes_map[node->value] = NULL;
+        tree->leaves_map[node->value] = NULL;
     }
     adaptive_node_delete(node);
 }
@@ -40,8 +37,8 @@ void adaptive_tree_init(adaptive_tree* self, uint8_t weight)
 {
     self->nyt_node = adaptive_node_init(true, 0, NULL, NULL, NULL, weight);
     self->root = self->nyt_node;
-    self->nodes_map = malloc(NODES_MAP_SIZE);
-    memset(self->nodes_map, 0, NODES_MAP_SIZE);
+    self->weights_map = calloc(1024, sizeof(deque));  // no need to initialize them, they are all zeroed by calloc
+    self->leaves_map = calloc(256, sizeof(adaptive_node*));  // they too
 }
 
 void adaptive_tree_traversal(
@@ -79,8 +76,8 @@ void adaptive_tree_traversal(
 void adaptive_tree_delete(adaptive_tree* self)
 {
     adaptive_tree_traversal(self, remove_node_in_traversal, self, NULL, NULL);
-    free(self->nodes_map);
-    self->nodes_map = 0;
+    free(self->leaves_map);
+    self->leaves_map = 0;
     self->nyt_node = 0;
     self->root = 0;
 }
@@ -106,31 +103,11 @@ static void recalculate_node_weight(adaptive_node* node)
 
 static void update_weights(adaptive_tree* tree, adaptive_node* node)
 {
-    recalculate_node_weight(node);
-    uint8_t max_leaf_weight = adaptive_node_get_type(node)==NODE_TYPE_LEAF? node->weight : 0;
-    adaptive_node* current_node = node;
-    uint8_t max_node_weight = node->weight;
-    while (current_node != tree)
-    {
-        max_node_weight = max(3,
-            node->weight,
-            node->left? ((adaptive_node*)current_node->left)->weight : 0,
-            node->right? ((adaptive_node*)current_node->right)->weight : 0
-        );
-        max_leaf_weight = max(4,
-            max_leaf_weight,
-            adaptive_node_get_type(current_node)==NODE_TYPE_LEAF? node->weight : 0,
-            node->left && adaptive_node_get_type(current_node->left)==NODE_TYPE_LEAF? ((adaptive_node*)node->left)->weight : 0,
-            node->right && adaptive_node_get_type(current_node->right)==NODE_TYPE_LEAF? ((adaptive_node*)node->right)->weight : 0
-        );
-        if (current_node->left && adaptive_node_get_type(current_node->left)==NODE_TYPE_LEAF && )
-        {}
-    }
 }
 
 void adaptive_tree_update(adaptive_tree* self, uint8_t value, bit_buffer* buffer)
 {
-    if (self->nodes_map[value])
+    if (self->leaves_map[value])
     {
     }
     else
