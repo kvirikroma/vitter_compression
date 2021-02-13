@@ -42,7 +42,7 @@ segment .text
         mov qword [rdi+deque.last], 0
         ret
 
-    deque_delete:
+    deque_clear:
         ;param rdi - address of deque
         ;deletes deque and all its nodes
         push rbp

@@ -24,7 +24,7 @@ deque;
 extern void deque_init(deque*);
 
 // clears the deque
-extern void deque_delete(deque*);
+extern void deque_clear(deque*);
 
 // frees memory using each item as pointer and clears the deque
 extern void deque_delete_each(deque*);

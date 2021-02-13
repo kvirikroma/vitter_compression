@@ -6,21 +6,24 @@
 #include "include/utils.h"
 
 
-static int64_t max(uint8_t items_count, ...)
+static uint64_t weight_hash_function(uint64_t weight)
 {
-    va_list args;
-    va_start(args, items_count);
-    int64_t result = INT64_MIN;
-    for (uint8_t item = 0; item < items_count; item++)
-    {
-        int64_t current_arg = va_arg(args, int64_t);
-        if (result < current_arg)
-        {
-            result = current_arg;
-        }
-    }
-    va_end(args);
-    return result;
+    return weight;
+}
+
+static bool weight_comparison_function(uint64_t weight, uint64_t other_weight)
+{
+    return weight == other_weight;
+}
+
+static uint64_t leaf_hash_function(uint8_t leaf_value)
+{
+    return leaf_value;
+}
+
+static bool leaf_comparison_function(uint8_t leaf_value, uint8_t other_leaf_value)
+{
+    return leaf_value == other_leaf_value;
 }
 
 static void remove_node_in_traversal(adaptive_node* node, bit_buffer* path, void* params)
@@ -28,7 +31,7 @@ static void remove_node_in_traversal(adaptive_node* node, bit_buffer* path, void
     adaptive_tree* tree = (adaptive_tree*)params;
     if (adaptive_node_get_type(node) == NODE_TYPE_LEAF)
     {
-        tree->leaves_map[node->value] = NULL;
+        map_remove_item(&tree->leaves_map, node->value);
     }
     adaptive_node_delete(node);
 }
@@ -37,8 +40,8 @@ void adaptive_tree_init(adaptive_tree* self, uint8_t weight)
 {
     self->nyt_node = adaptive_node_init(true, 0, NULL, NULL, NULL, weight);
     self->root = self->nyt_node;
-    self->weights_map = calloc(1024, sizeof(deque));  // no need to initialize them, they are all zeroed by calloc
-    self->leaves_map = calloc(256, sizeof(adaptive_node*));  // they too
+    map_init(&self->weights_map, weight_hash_function, weight_comparison_function);
+    map_init(&self->leaves_map, leaf_hash_function, leaf_comparison_function);
 }
 
 void adaptive_tree_traversal(
@@ -76,8 +79,8 @@ void adaptive_tree_traversal(
 void adaptive_tree_delete(adaptive_tree* self)
 {
     adaptive_tree_traversal(self, remove_node_in_traversal, self, NULL, NULL);
-    free(self->leaves_map);
-    self->leaves_map = 0;
+    map_delete(&self->leaves_map);
+    map_delete(&self->weights_map);
     self->nyt_node = 0;
     self->root = 0;
 }
@@ -107,7 +110,7 @@ static void update_weights(adaptive_tree* tree, adaptive_node* node)
 
 void adaptive_tree_update(adaptive_tree* self, uint8_t value, bit_buffer* buffer)
 {
-    if (self->leaves_map[value])
+    if (map_is_present(&self->leaves_map, value))
     {
     }
     else

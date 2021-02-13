@@ -3,16 +3,18 @@
 
 #include "adaptive_node.h"
 #include "deque.h"
+#include "map.h"
 
 
 typedef struct
 {
     adaptive_node* nyt_node;
     adaptive_node* root;
-    adaptive_node** leaves_map;  // key is the value
-    deque* weights_map;  // array<deque<adaptive_node*>>
+    map leaves_map;  // index is the value of node
+    map weights_map;  // array<deque<adaptive_node*>>
 }
 adaptive_tree;
+
 
 void adaptive_tree_init(adaptive_tree*, uint8_t);
 
