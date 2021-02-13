@@ -1,7 +1,7 @@
 %ifndef DEQUE_INCLUDE
 %define DEQUE_INCLUDE
 
-%inclide "deque_include_internal.asm"
+%include "deque_include_internal.asm"
 
 
 extern deque_init              ;initializes empty deque structure

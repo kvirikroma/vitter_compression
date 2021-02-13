@@ -1,3 +1,6 @@
+#ifndef DEQUE_H
+#define DEQUE_H
+
 #include <stdint.h>
 
 #include "dynamic_array.h"
@@ -49,3 +52,6 @@ extern void deque_extend_from_array(deque*, dynamic_array*);
 
 // merges two deques to one in O(1), deletes second of them
 extern void deque_merge(deque*, deque*);
+
+
+#endif

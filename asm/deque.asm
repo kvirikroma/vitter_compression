@@ -5,7 +5,7 @@ extern malloc
 extern free
 
 global deque_init
-global deque_delete
+global deque_clear
 global deque_delete_each
 global deque_push_right
 global deque_push_left
@@ -80,7 +80,7 @@ segment .text
             pop rdi
             loop deleting_each_node
         end_deleting_each:
-        mov [rdi+deque.len], qword 0
+        mov qword [rdi+deque.len], 0
         xor rax, rax
 
         leave
@@ -255,7 +255,7 @@ segment .text
         push rdi
         push rsi
         mov rdi, rsi
-        call array_get_size
+        mov rax, [rdi+array.length]
         cmp rax, 0
         jng extend_from_empty
             mov rcx, rax
