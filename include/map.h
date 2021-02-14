@@ -3,6 +3,8 @@
 
 #include "hash_table.h"
 
+#define MAP_DEFAULT_ACCURACY 65
+
 
 typedef struct 
 {

@@ -5,6 +5,8 @@
 #include "deque.h"
 #include "map.h"
 
+#define BLOCK_DEFAULT_ACCURACY 50
+
 
 typedef struct
 {
@@ -16,7 +18,7 @@ typedef struct
 adaptive_tree;
 
 
-void adaptive_tree_init(adaptive_tree*, uint8_t);
+void adaptive_tree_init(adaptive_tree*);
 
 void adaptive_tree_delete(adaptive_tree*);
 

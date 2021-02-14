@@ -3,8 +3,6 @@
 #include "include/utils.h"
 #include "include/map.h"
 
-#define MAP_DEFAULT_ACCURACY 65
-
 
 typedef struct
 {

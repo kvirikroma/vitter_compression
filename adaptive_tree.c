@@ -4,8 +4,6 @@
 #include "include/adaptive_tree.h"
 #include "include/utils.h"
 
-#define BLOCK_DEFAULT_ACCURACY 50
-
 
 static uint64_t weight_hash_function(uint64_t weight)
 {
@@ -75,9 +73,9 @@ static void remove_node_in_traversal(adaptive_node* node, bit_buffer* path, void
     adaptive_node_delete(node);
 }
 
-void adaptive_tree_init(adaptive_tree* self, uint8_t weight)
+void adaptive_tree_init(adaptive_tree* self)
 {
-    self->root = self->nyt_node = adaptive_node_init(true, 0, NULL, NULL, NULL, weight);
+    self->root = self->nyt_node = adaptive_node_init(true, 0, NULL, NULL, NULL, 0);
     map_init(&self->weights_map, (uint64_t(*)(void*))weight_hash_function, (bool(*)(void*, void*))weight_comparison_function);
     map_init(&self->leaves_map, (uint64_t(*)(void*))leaf_hash_function, (bool(*)(void*, void*))leaf_comparison_function);
 }
