@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <stdarg.h>
 
+#include "include/utils.h"
+
 
 void* check_pointer_after_malloc(void* ptr)
 {
@@ -23,6 +25,23 @@ int64_t max(uint32_t items_count, ...)
     {
         int64_t current_arg = va_arg(args, int64_t);
         if (result < current_arg)
+        {
+            result = current_arg;
+        }
+    }
+    va_end(args);
+    return result;
+}
+
+int64_t min(uint32_t items_count, ...)
+{
+    va_list args;
+    va_start(args, items_count);
+    int64_t result = INT64_MAX;
+    for (uint8_t item = 0; item < items_count; item++)
+    {
+        int64_t current_arg = va_arg(args, int64_t);
+        if (result > current_arg)
         {
             result = current_arg;
         }

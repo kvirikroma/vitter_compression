@@ -1,11 +1,12 @@
 #include <stdlib.h>
 
+#include "include/utils.h"
 #include "include/hash_table.h"
 
 
 void hash_table_init(hash_table* self, uint8_t accuracy, uint64_t(*hash_function)(void*), bool(*comparison_function)(void*, void*))
 {
-    self->data = calloc(INIT_DATA_SIZE, sizeof(deque));  // all deques are already zeroed by calloc and so initialized
+    self->data = check_pointer_after_malloc(calloc(INIT_DATA_SIZE, sizeof(deque)));  // all deques are already zeroed by calloc and so initialized
     if (accuracy < MIN_ACCURACY)
     {
         self->accuracy = MIN_ACCURACY;
@@ -75,7 +76,7 @@ static void check_for_space(hash_table* self)
     }
     if (actions_required)
     {
-        deque* new_data_storage = calloc(self->current_size, sizeof(deque));  // all deques are already zeroed by calloc and so initialized
+        deque* new_data_storage = check_pointer_after_malloc(calloc(self->current_size, sizeof(deque)));  // all deques are already zeroed by calloc and so initialized
         deque* old_data_storage = self->data;
         self->data = new_data_storage;
         move_items(self, old_data_storage, old_storage_size);

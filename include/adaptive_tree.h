@@ -10,8 +10,8 @@ typedef struct
 {
     adaptive_node* nyt_node;
     adaptive_node* root;
-    map leaves_map;  // index is the value of node
-    map weights_map;  // array<deque<adaptive_node*>>
+    map leaves_map;  // map<uint8_t: adaptive_node*>
+    map weights_map;  // map<uint64_t: hash_table<adaptive_node*>>
 }
 adaptive_tree;
 
@@ -23,6 +23,8 @@ void adaptive_tree_delete(adaptive_tree*);
 void adaptive_tree_traversal(adaptive_tree*, void(*)(adaptive_node*, bit_buffer*, void*), void*, bit_buffer*, adaptive_node*);
 
 void adaptive_tree_update(adaptive_tree*, uint8_t, bit_buffer*);
+
+uint8_t adaptive_tree_get_value(adaptive_tree* self, bit_buffer* path);
 
 
 #endif

@@ -1,5 +1,6 @@
 #include <stdlib.h>
 
+#include "include/utils.h"
 #include "include/bit_buffer.h"
 #include "include/bit_array.h"
 
@@ -95,4 +96,17 @@ void bit_buffer_extend(bit_buffer* self, bit_buffer* other)
     {
         bit_buffer_add_bit(self, bit_buffer_get_bit(other, i));
     }
+}
+
+bool bit_buffer_starts_with(bit_buffer* self, bit_buffer* other)
+{
+    uint64_t min_size = min(2, bit_buffer_get_size(self), bit_buffer_get_size(other));
+    for (uint64_t i = 0; i < min_size; i++)
+    {
+        if (bit_buffer_get_bit(self, i) != bit_buffer_get_bit(other, i))
+        {
+            return false;
+        }
+    }
+    return true;
 }

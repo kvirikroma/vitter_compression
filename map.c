@@ -1,8 +1,9 @@
 #include <stdlib.h>
 
+#include "include/utils.h"
 #include "include/map.h"
 
-#define MAP_DEFAULT_ACCURACY 55
+#define MAP_DEFAULT_ACCURACY 65
 
 
 typedef struct
@@ -12,6 +13,14 @@ typedef struct
     map* storage;
 }
 map_item;
+
+typedef struct
+{
+    void(*original_receiver)(void*, void*);
+    void* original_params;
+    bool use_values_instaed_of_keys;
+}
+map_item_receiver_params;
 
 
 static uint64_t modified_hash_function(map_item* item)
@@ -43,7 +52,7 @@ void map_delete(map* self)
 
 void map_set_item(map* self, void* key, void* value)
 {
-    map_item* item = malloc(sizeof(map_item));
+    map_item* item = check_pointer_after_malloc(malloc(sizeof(map_item)));
     item->key = key;
     item->value = value;
     item->storage = self;
@@ -124,7 +133,25 @@ void map_get_values(map* self, void** dest)
     }
 }
 
-void map_iterate(map* self, void(* item_receiver)(void* item, void* params), void* params, bool use_values_instaed_of_keys)
+static void map_item_receiver(map_item* item, map_item_receiver_params* params)
 {
+    if (params->use_values_instaed_of_keys)
+    {
+        params->original_receiver(item->value, params->original_params);
+    }
+    else
+    {
+        params->original_receiver(item->key, params->original_params);
+    }
     
+}
+
+void map_iterate(map* self, void(*item_receiver)(void* item, void* params), void* params, bool use_values_instaed_of_keys)
+{
+    map_item_receiver_params inner_params = (map_item_receiver_params){
+        .original_receiver=item_receiver,
+        .original_params=params,
+        .use_values_instaed_of_keys=use_values_instaed_of_keys
+    };
+    hash_table_iterate(&self->table, (void(*)(void*, void*))map_item_receiver, &inner_params);
 }

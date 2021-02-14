@@ -31,5 +31,7 @@ dynamic_array* bit_buffer_get_full_part(bit_buffer* self, bool detach);
 
 void bit_buffer_extend(bit_buffer* self, bit_buffer* other);
 
+bool bit_buffer_starts_with(bit_buffer* self, bit_buffer* other);
+
 
 #endif
