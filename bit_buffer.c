@@ -16,6 +16,15 @@ void bit_buffer_delete(bit_buffer* self)
 {
     array_delete(self->data);
     self->data = NULL;
+    self->last_item = 0;
+    self->last_item_size = 0;
+}
+
+void bit_buffer_clear(bit_buffer* self)
+{
+    array_clear(self->data);
+    self->last_item = 0;
+    self->last_item_size = 0;
 }
 
 void bit_buffer_add_bit(bit_buffer* self, bool bit_value)
@@ -109,4 +118,12 @@ bool bit_buffer_starts_with(bit_buffer* self, bit_buffer* other)
         }
     }
     return true;
+}
+
+void bit_buffer_extend_from_memory(bit_buffer* self, uint8_t* data, uint32_t bits_count)
+{
+    for (uint64_t i = 0; i < bits_count * 8; i++)
+    {
+        bit_buffer_add_bit(self, bit_array_get_bit(data, i));
+    }
 }

@@ -35,7 +35,7 @@ extern dynamic_array* array_shrink_to_fit(dynamic_array*);
 extern dynamic_array* array_extend(dynamic_array*, dynamic_array*);
 
 // extends array by the qwords from mem
-extern dynamic_array* array_extend_from_mem(dynamic_array*, uint64_t*);
+extern dynamic_array* array_extend_from_mem(dynamic_array*, uint64_t*, uint64_t);
 
 // zeroes array length
 extern void array_clear(dynamic_array*);

@@ -101,7 +101,7 @@ segment .text
 
     adaptive_node_get_path:
         ;param rdi - node
-        ;param rsi - path to complete (only for the recursion), should be a nullprt on 1st call
+        ;param rsi - path to complete (only for the recursion), should be a nullprt (or empty one) on 1st call
         ;returns bit_buffer with path from root to the node
         push rbp
         mov rbp, rsp

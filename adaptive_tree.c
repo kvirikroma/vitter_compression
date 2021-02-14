@@ -183,7 +183,7 @@ static void increase_weights(adaptive_tree* self, adaptive_node* node)
     }
 }
 
-void adaptive_tree_update(adaptive_tree* self, uint8_t value, bit_buffer* buffer)
+void adaptive_tree_update(adaptive_tree* self, uint8_t value)
 {
     adaptive_node* node_to_update;
     if (map_is_present(&self->leaves_map, (void*)(uint64_t)value))

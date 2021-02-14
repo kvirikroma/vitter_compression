@@ -1,7 +1,12 @@
 #ifndef ENCODER_H
 #define ENCODER_H
 
+#include <stdint.h>
+
 #include "adaptive_tree.h"
+
+#define BITS_IN_ARRAY_ITEM (sizeof(uint64_t) * 8)
+#define ENCODER_FLUSH_ON_BITS (BITS_IN_ARRAY_ITEM * 64)
 
 
 typedef struct

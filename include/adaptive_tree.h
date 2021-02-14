@@ -24,7 +24,7 @@ void adaptive_tree_delete(adaptive_tree*);
 
 void adaptive_tree_traversal(adaptive_tree*, void(*)(adaptive_node*, bit_buffer*, void*), void*, bit_buffer*, adaptive_node*);
 
-void adaptive_tree_update(adaptive_tree*, uint8_t, bit_buffer*);
+void adaptive_tree_update(adaptive_tree*, uint8_t);
 
 uint8_t adaptive_tree_get_value(adaptive_tree* self, bit_buffer* path);
 

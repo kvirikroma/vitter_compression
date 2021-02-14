@@ -17,6 +17,8 @@ void bit_buffer_init(bit_buffer*);
 
 void bit_buffer_delete(bit_buffer*);
 
+void bit_buffer_clear(bit_buffer*);
+
 void bit_buffer_add_bit(bit_buffer*, bool);
 
 bool bit_buffer_pop_bit(bit_buffer*);
@@ -32,6 +34,8 @@ dynamic_array* bit_buffer_get_full_part(bit_buffer* self, bool detach);
 void bit_buffer_extend(bit_buffer* self, bit_buffer* other);
 
 bool bit_buffer_starts_with(bit_buffer* self, bit_buffer* other);
+
+void bit_buffer_extend_from_memory(bit_buffer*, uint8_t*, uint32_t);
 
 
 #endif
