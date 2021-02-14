@@ -29,5 +29,7 @@ void map_get_keys(map*, void**);
 
 void map_get_values(map*, void**);
 
+void map_iterate(map*, void(*)(void*, void*), void*, bool);
+
 
 #endif

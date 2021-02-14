@@ -32,7 +32,7 @@ void map_init(map* self, uint64_t(*hash_function)(void*), bool(*comparison_funct
 {
     self->hash_function = hash_function;
     self->comparison_function = comparison_function;
-    hash_table_init(&self->table, MAP_DEFAULT_ACCURACY, modified_hash_function, modified_comparison_function);
+    hash_table_init(&self->table, MAP_DEFAULT_ACCURACY, (uint64_t(*)(void*))modified_hash_function, (bool(*)(void*, void*))modified_comparison_function);
 }
 
 void map_delete(map* self)
@@ -122,4 +122,9 @@ void map_get_values(map* self, void** dest)
     {
         dest[i] = items[i]->value;
     }
+}
+
+void map_iterate(map* self, void(* item_receiver)(void* item, void* params), void* params, bool use_values_instaed_of_keys)
+{
+    
 }

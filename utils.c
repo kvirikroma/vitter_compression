@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdarg.h>
 
 
 void* check_pointer_after_malloc(void* ptr)
@@ -13,7 +14,7 @@ void* check_pointer_after_malloc(void* ptr)
     return ptr;
 }
 
-int64_t max(uint8_t items_count, ...)
+int64_t max(uint32_t items_count, ...)
 {
     va_list args;
     va_start(args, items_count);

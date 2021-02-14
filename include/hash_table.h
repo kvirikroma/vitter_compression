@@ -43,5 +43,8 @@ void* hash_table_get_item(hash_table* self, void* item);
 // Remove an item from the hash table; returns item if it was successfully found and deleted
 void* hash_table_remove_item(hash_table*, void*);
 
+// Iterate through hash table items and execute a function for each of them with the item and a custom parameter
+void hash_table_iterate(hash_table*, void(*)(void*, void*), void*);
+
 
 #endif

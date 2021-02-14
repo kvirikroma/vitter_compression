@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
 
 #include "include/adaptive_tree.h"
 #include "include/utils.h"
@@ -16,14 +15,14 @@ static bool weight_comparison_function(uint64_t weight, uint64_t other_weight)
     return weight == other_weight;
 }
 
-static uint64_t leaf_hash_function(uint8_t leaf_value)
+static uint64_t leaf_hash_function(uint64_t leaf_value)
 {
-    return leaf_value;
+    return (uint8_t)leaf_value;
 }
 
-static bool leaf_comparison_function(uint8_t leaf_value, uint8_t other_leaf_value)
+static bool leaf_comparison_function(uint64_t leaf_value, uint64_t other_leaf_value)
 {
-    return leaf_value == other_leaf_value;
+    return (uint8_t)leaf_value == (uint8_t)other_leaf_value;
 }
 
 static void remove_node_in_traversal(adaptive_node* node, bit_buffer* path, void* params)
@@ -31,7 +30,7 @@ static void remove_node_in_traversal(adaptive_node* node, bit_buffer* path, void
     adaptive_tree* tree = (adaptive_tree*)params;
     if (adaptive_node_get_type(node) == NODE_TYPE_LEAF)
     {
-        map_remove_item(&tree->leaves_map, node->value);
+        map_remove_item(&tree->leaves_map, (void*)(uint64_t)node->value);
     }
     adaptive_node_delete(node);
 }
@@ -40,8 +39,8 @@ void adaptive_tree_init(adaptive_tree* self, uint8_t weight)
 {
     self->nyt_node = adaptive_node_init(true, 0, NULL, NULL, NULL, weight);
     self->root = self->nyt_node;
-    map_init(&self->weights_map, weight_hash_function, weight_comparison_function);
-    map_init(&self->leaves_map, leaf_hash_function, leaf_comparison_function);
+    map_init(&self->weights_map, (uint64_t(*)(void*))weight_hash_function, (bool(*)(void*, void*))weight_comparison_function);
+    map_init(&self->leaves_map, (uint64_t(*)(void*))leaf_hash_function, (bool(*)(void*, void*))leaf_comparison_function);
 }
 
 void adaptive_tree_traversal(
@@ -61,12 +60,12 @@ void adaptive_tree_traversal(
         if (current_node->left)
         {
             bit_buffer_add_bit(current_path, 0);  // path for the next node
-            adaptive_tree_traversal(self, node_handler, params, current_path, current_node->left);
+            adaptive_tree_traversal(self, node_handler, params, current_path, (adaptive_node*)current_node->left);
         }
         if (current_node->right)
         {
             bit_buffer_add_bit(current_path, 1);  // path for the next node
-            adaptive_tree_traversal(self, node_handler, params, current_path, current_node->right);
+            adaptive_tree_traversal(self, node_handler, params, current_path, (adaptive_node*)current_node->right);
         }
     }
     if (adaptive_node_get_type(current_node) == NODE_TYPE_LEAF)
@@ -91,7 +90,7 @@ static void check_node_children(adaptive_node* node)
     {
         if (((adaptive_node*)node->left)->weight > ((adaptive_node*)node->right)->weight)
         {
-            adaptive_node_exchange(node->left, node->right);
+            adaptive_node_exchange((adaptive_node*)node->left, (adaptive_node*)node->right);
         }
     }
 }
@@ -110,7 +109,7 @@ static void update_weights(adaptive_tree* tree, adaptive_node* node)
 
 void adaptive_tree_update(adaptive_tree* self, uint8_t value, bit_buffer* buffer)
 {
-    if (map_is_present(&self->leaves_map, value))
+    if (map_is_present(&self->leaves_map, (void*)(uint64_t)value))
     {
     }
     else

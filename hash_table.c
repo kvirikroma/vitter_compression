@@ -53,7 +53,7 @@ static void move_items(hash_table* self, deque* src_data, size_t size)
     {
         while (src_data[i].len)
         {
-            hash_table_insert_item(self, deque_pop_left(&src_data[i]));
+            hash_table_insert_item(self, (void*)deque_pop_left(&src_data[i]));
         }
     }
 }
@@ -92,7 +92,7 @@ static deque_node* find_node_by_value(deque* dest, void* value, bool(*comparison
         {
             return current_node;
         }
-        current_node = current_node->next;
+        current_node = (deque_node*)current_node->next;
     }
     return NULL;
 }
@@ -155,4 +155,17 @@ void* hash_table_remove_item(hash_table* self, void* item)
         return node->data;
     }
     return NULL;
+}
+
+void hash_table_iterate(hash_table* self, void(*item_receiver)(void* item, void* params), void* params)
+{
+    for (uint64_t i = 0; i < self->current_size; i++)
+    {
+        deque_node* current_node = self->data[i].first;
+        while (current_node)
+        {
+            item_receiver((void*)current_node->data, params);
+            current_node = (deque_node*)current_node->next;
+        }
+    }
 }
