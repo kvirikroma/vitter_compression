@@ -5,7 +5,7 @@
 #include "include/bit_array.h"
 
 
-void decoder_init(decoder* self, void(*writer)(uint8_t*, uint32_t, void*), void* writer_params)
+void decoder_init(decoder* self, void(*writer)(const uint8_t*, uint32_t, void*), void* writer_params)
 {
     self->writer_params = writer_params;
     self->writer = writer;
@@ -47,7 +47,7 @@ static uint8_t write_value_to_buffer(decoder* self)
     return result;
 }
 
-void decoder_write(decoder* self, uint8_t* data, uint32_t length)
+void decoder_write(decoder* self, const uint8_t* data, uint32_t length)
 {
     for (uint64_t i = 0; i < (length * 8); i++)
     {

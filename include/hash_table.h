@@ -13,8 +13,8 @@ typedef struct
     uint8_t accuracy;  // bigger accuracy will take more memory but work faster
     uint64_t current_size;
     uint64_t items_count;
-    uint64_t (*hash_function)(void*);
-    bool (*comparison_function)(void*, void*);  // it is needed to check equality of an items
+    uint64_t (*hash_function)(const void*);
+    bool (*comparison_function)(const void*, const void*);  // it is needed to check equality of an items
 }
 hash_table;
 
@@ -26,25 +26,28 @@ hash_table;
 
 
 // Initialize the hash table
-void hash_table_init(hash_table*, uint8_t, uint64_t(*)(void*), bool(*)(void*, void*));
+void hash_table_init(hash_table*, uint8_t, uint64_t(*)(const void*), bool(*)(const void*, const void*));
 
 // Delete the hash table
 void hash_table_delete(hash_table*);
 
 // Insert an item to hash table
-void hash_table_insert_item(hash_table*, void*);
+void hash_table_insert_item(hash_table*, const void*);
 
 // Check if the item is present in the hash table
-bool hash_table_is_present(hash_table*, void*);
+bool hash_table_is_present(hash_table*, const void*);
 
 // Get item by itself or equivalent one
-void* hash_table_get_item(hash_table* self, void* item);
+void* hash_table_get_item(hash_table* self, const void*);
 
 // Remove an item from the hash table; returns item if it was successfully found and deleted
-void* hash_table_remove_item(hash_table*, void*);
+void* hash_table_remove_item(hash_table*, const void*);
 
 // Iterate through hash table items and execute a function for each of them with the item and a custom parameter
 void hash_table_iterate(hash_table*, void(*)(void*, void*), void*);
+
+// Works as hash_table_iterate but accepts only receivers for constant objects
+void hash_table_const_iterate(hash_table* self, void(*item_receiver)(const void* item, void* params), void* params);
 
 
 #endif

@@ -4,7 +4,7 @@
 #include "include/hash_table.h"
 
 
-void hash_table_init(hash_table* self, uint8_t accuracy, uint64_t(*hash_function)(void*), bool(*comparison_function)(void*, void*))
+void hash_table_init(hash_table* self, uint8_t accuracy, uint64_t(*hash_function)(const void*), bool(*comparison_function)(const void*, const void*))
 {
     self->data = check_pointer_after_malloc(calloc(INIT_DATA_SIZE, sizeof(deque)));  // all deques are already zeroed by calloc and so initialized
     if (accuracy < MIN_ACCURACY)
@@ -84,7 +84,7 @@ static void check_for_space(hash_table* self)
     }
 }
 
-static deque_node* find_node_by_value(deque* dest, void* value, bool(*comparison_function)(void*, void*))
+static deque_node* find_node_by_value(deque* dest, const void* value, bool(*comparison_function)(const void*, const void*))
 {
     deque_node* current_node = dest->first;
     while (current_node)
@@ -98,13 +98,13 @@ static deque_node* find_node_by_value(deque* dest, void* value, bool(*comparison
     return NULL;
 }
 
-static deque* get_deque_of_item(hash_table* self, void* item)
+static deque* get_deque_of_item(hash_table* self, const void* item)
 {
     uint64_t place = self->hash_function(item) % self->current_size;
     return &self->data[place];
 }
 
-void hash_table_insert_item(hash_table* self, void* item)
+void hash_table_insert_item(hash_table* self, const void* item)
 {
     deque* deque_to_edit = get_deque_of_item(self, item);
     if (!find_node_by_value(deque_to_edit, item, self->comparison_function))
@@ -115,13 +115,13 @@ void hash_table_insert_item(hash_table* self, void* item)
     }
 }
 
-bool hash_table_is_present(hash_table* self, void* item)
+bool hash_table_is_present(hash_table* self, const void* item)
 {
     deque_node* node = find_node_by_value(get_deque_of_item(self, item), item, self->comparison_function);
     return (bool)node;
 }
 
-void* hash_table_get_item(hash_table* self, void* item)
+void* hash_table_get_item(hash_table* self, const void* item)
 {
     deque_node* node = find_node_by_value(get_deque_of_item(self, item), item, self->comparison_function);
     if (!node)
@@ -131,7 +131,7 @@ void* hash_table_get_item(hash_table* self, void* item)
     return node->data;
 }
 
-void* hash_table_remove_item(hash_table* self, void* item)
+void* hash_table_remove_item(hash_table* self, const void* item)
 {
     deque* deque_to_edit = get_deque_of_item(self, item);
     deque_node* node = find_node_by_value(deque_to_edit, item, self->comparison_function);
@@ -166,6 +166,19 @@ void hash_table_iterate(hash_table* self, void(*item_receiver)(void* item, void*
         while (current_node)
         {
             item_receiver((void*)current_node->data, params);
+            current_node = (deque_node*)current_node->next;
+        }
+    }
+}
+
+void hash_table_const_iterate(hash_table* self, void(*item_receiver)(const void* item, void* params), void* params)
+{
+    for (uint64_t i = 0; i < self->current_size; i++)
+    {
+        deque_node* current_node = self->data[i].first;
+        while (current_node)
+        {
+            item_receiver((const void*)current_node->data, params);
             current_node = (deque_node*)current_node->next;
         }
     }

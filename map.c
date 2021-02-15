@@ -6,7 +6,7 @@
 
 typedef struct
 {
-    void* key;
+    const void* key;
     void* value;
     map* storage;
 }
@@ -14,11 +14,17 @@ map_item;
 
 typedef struct
 {
+    void(*original_receiver)(const void*, void*);
+    void* original_params;
+}
+map_key_receiver_params;
+
+typedef struct
+{
     void(*original_receiver)(void*, void*);
     void* original_params;
-    bool use_values_instaed_of_keys;
 }
-map_item_receiver_params;
+map_value_receiver_params;
 
 
 static uint64_t modified_hash_function(map_item* item)
@@ -35,11 +41,15 @@ static bool modified_comparison_function(map_item* item, map_item* other_item)
     return item->storage->comparison_function(item->key, other_item->key);
 }
 
-void map_init(map* self, uint64_t(*hash_function)(void*), bool(*comparison_function)(void*, void*))
+void map_init(map* self, uint64_t(*hash_function)(const void*), bool(*comparison_function)(const void*, const void*))
 {
     self->hash_function = hash_function;
     self->comparison_function = comparison_function;
-    hash_table_init(&self->table, MAP_DEFAULT_ACCURACY, (uint64_t(*)(void*))modified_hash_function, (bool(*)(void*, void*))modified_comparison_function);
+    hash_table_init(
+        &self->table, MAP_DEFAULT_ACCURACY,
+        (uint64_t(*)(const void*))modified_hash_function,
+        (bool(*)(const void*, const void*))modified_comparison_function
+    );
 }
 
 void map_delete(map* self)
@@ -48,7 +58,7 @@ void map_delete(map* self)
     hash_table_delete(&self->table);
 }
 
-void map_set_item(map* self, void* key, void* value)
+void map_set_item(map* self, const void* key, void* value)
 {
     map_item* item = check_pointer_after_malloc(malloc(sizeof(map_item)));
     item->key = key;
@@ -66,13 +76,13 @@ void map_set_item(map* self, void* key, void* value)
     }
 }
 
-bool map_is_present(map* self, void* key)
+bool map_is_present(map* self, const void* key)
 {
     map_item item_to_search_for = (map_item){.key = key, .storage = self, .value = NULL};
     return (bool)hash_table_is_present(&self->table, &item_to_search_for);
 }
 
-void* map_get_item(map* self, void* key)
+void* map_get_item(map* self, const void* key)
 {
     map_item item_to_search_for = (map_item){.key = key, .storage = self, .value = NULL};
     map_item* item_found = hash_table_get_item(&self->table, &item_to_search_for);
@@ -84,7 +94,7 @@ void* map_get_item(map* self, void* key)
     
 }
 
-void* map_remove_item(map* self, void* key)
+void* map_remove_item(map* self, const void* key)
 {
     map_item item_to_remove = (map_item){.key = key, .storage = self, .value = NULL};
     map_item* removed_item = hash_table_remove_item(&self->table, &item_to_remove);
@@ -111,7 +121,7 @@ static void get_items(map* self, map_item** dest)
     }
 }
 
-void map_get_keys(map* self, void** dest)
+void map_get_keys(map* self, const void** dest)
 {
     map_item* items[self->table.items_count];
     get_items(self, items);
@@ -131,25 +141,30 @@ void map_get_values(map* self, void** dest)
     }
 }
 
-static void map_item_receiver(map_item* item, map_item_receiver_params* params)
+static void map_key_receiver(const map_item* item, map_key_receiver_params* params)
 {
-    if (params->use_values_instaed_of_keys)
-    {
-        params->original_receiver(item->value, params->original_params);
-    }
-    else
-    {
-        params->original_receiver(item->key, params->original_params);
-    }
-    
+    params->original_receiver(item->key, params->original_params);
 }
 
-void map_iterate(map* self, void(*item_receiver)(void* item, void* params), void* params, bool use_values_instaed_of_keys)
+static void map_value_receiver(map_item* item, map_value_receiver_params* params)
 {
-    map_item_receiver_params inner_params = (map_item_receiver_params){
+    params->original_receiver(item->value, params->original_params);
+}
+
+void map_iterate_keys(map* self, void(*item_receiver)(const void* item, void* params), void* params)
+{
+    map_key_receiver_params inner_params = (map_key_receiver_params){
         .original_receiver=item_receiver,
-        .original_params=params,
-        .use_values_instaed_of_keys=use_values_instaed_of_keys
+        .original_params=params
     };
-    hash_table_iterate(&self->table, (void(*)(void*, void*))map_item_receiver, &inner_params);
+    hash_table_const_iterate(&self->table, (void(*)(const void*, void*))map_key_receiver, &inner_params);
+}
+
+void map_iterate_values(map* self, void(*item_receiver)(void* item, void* params), void* params)
+{
+    map_value_receiver_params inner_params = (map_value_receiver_params){
+        .original_receiver=item_receiver,
+        .original_params=params
+    };
+    hash_table_iterate(&self->table, (void(*)(void*, void*))map_value_receiver, &inner_params);
 }

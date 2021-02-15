@@ -48,10 +48,10 @@ extern uint64_t deque_pop_left(deque*);
 extern dynamic_array* deque_to_array(deque*);
 
 // extends deque from array
-extern void deque_extend_from_array(deque*, dynamic_array*);
+extern void deque_extend_from_array(deque*, const dynamic_array*);
 
 // merges two deques to one in O(1), deletes second of them
-extern void deque_merge(deque*, deque*);
+extern void deque_merge(deque*, const deque*);
 
 
 #endif

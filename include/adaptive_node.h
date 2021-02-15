@@ -33,9 +33,9 @@ extern void adaptive_node_delete(adaptive_node*);
 
 extern void adaptive_node_exchange(adaptive_node*, adaptive_node*);
 
-extern adaptive_node_type adaptive_node_get_type(adaptive_node*);
+extern adaptive_node_type adaptive_node_get_type(const adaptive_node*);
 
-extern bit_buffer* adaptive_node_get_path(adaptive_node*, bit_buffer*);
+extern bit_buffer* adaptive_node_get_path(const adaptive_node*, bit_buffer*);
 
 
 #endif

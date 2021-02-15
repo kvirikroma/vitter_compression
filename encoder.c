@@ -3,7 +3,7 @@
 #include "include/encoder.h"
 
 
-void encoder_init(encoder* self, void(*writer)(uint8_t*, uint32_t, void*), void* writer_params)
+void encoder_init(encoder* self, void(*writer)(const uint8_t*, uint32_t, void*), void* writer_params)
 {
     adaptive_tree_init(&self->tree);
     bit_buffer_init(&self->output_buffer);
@@ -30,7 +30,7 @@ static void flush_full_items(encoder* self)
     array_clear(full_data);
 }
 
-void encoder_write_bytes(encoder* self, uint8_t* data, uint32_t length)
+void encoder_write_bytes(encoder* self, const uint8_t* data, uint32_t length)
 {
     bit_buffer path_holder;
     bit_buffer_init(&path_holder);
