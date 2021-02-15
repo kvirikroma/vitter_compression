@@ -72,7 +72,7 @@ void map_set_item(map* self, const void* key, void* value)
     }
     else
     {
-        hash_table_insert_item(&self->table, existing_item);
+        hash_table_insert_item(&self->table, item);
     }
 }
 

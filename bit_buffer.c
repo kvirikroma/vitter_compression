@@ -29,7 +29,7 @@ void bit_buffer_clear(bit_buffer* self)
 
 void bit_buffer_push_bit(bit_buffer* self, bool bit_value)
 {
-    self->last_item &= ((uint64_t)bit_value) << self->last_item_size;
+    self->last_item |= ((uint64_t)bit_value) << self->last_item_size;
     self->last_item_size++;
     if (self->last_item_size >= 64)
     {
@@ -75,9 +75,9 @@ void bit_buffer_reverse(bit_buffer* self)
 {
     bit_buffer new_buffer;
     bit_buffer_init(&new_buffer);
-    for (uint64_t i = bit_buffer_get_size(self); i >= 0; i--)
+    for (uint64_t i = bit_buffer_get_size(self); i > 0; i--)
     {
-        bit_buffer_push_bit(&new_buffer, bit_buffer_get_bit(self, i));
+        bit_buffer_push_bit(&new_buffer, bit_buffer_get_bit(self, i - 1));
     }
     bit_buffer_delete(self);
     self->data = new_buffer.data;

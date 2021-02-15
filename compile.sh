@@ -33,7 +33,7 @@ done
 cd $start_directory
 rm -rf /tmp/vitter/compiler_symlinks
 
-clang -Wall -m64 -no-pie -gdwarf-2 -o ./vitter ./*.c ./asm/*.o -Bstatic -Ofast
+clang -Wall -m64 -no-pie -gdwarf-2 -o ./vitter ./*.c ./asm/*.o -Bstatic #-Ofast
 
 rm -rf ./asm/*.o
 rm -rf ./*.o

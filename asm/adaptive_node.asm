@@ -29,7 +29,7 @@ segment .text
         push rdi  ; [rbp-8] - is_nyt
         push rsi  ; [rbp-16] - weight
         cmp rdi, 0
-        je allocating
+        jne allocating
             push rdx  ; [rbp-24] - parent
             push rcx  ; [rbp-32] - left
             push r8   ; [rbp-40] - right
@@ -43,7 +43,7 @@ segment .text
         mov [rax+adaptive_node.weight], r10
         mov rdi, [rbp-8]
         cmp rdi, 0
-        jne setting_values
+        je setting_values
             mov byte [rax+adaptive_node.is_nyt], 1
             mov byte [rax+adaptive_node.value], 0
             mov qword [rax+adaptive_node.parent], 0

@@ -239,7 +239,14 @@ void adaptive_tree_update(adaptive_tree* self, uint8_t value)
             false, 0, (adaptive_node*)self->nyt_node->parent, self->nyt_node, node_to_update, 0
         );
         node_to_update->parent = (struct adaptive_node*)new_internal_node;
-        ((adaptive_node*)self->nyt_node->parent)->left = (struct adaptive_node*)new_internal_node;
+        if (self->nyt_node->parent)
+        {
+            ((adaptive_node*)self->nyt_node->parent)->left = (struct adaptive_node*)new_internal_node;
+        }
+        else
+        {
+            self->root = new_internal_node;
+        }
         self->nyt_node->parent = (struct adaptive_node*)new_internal_node;
         map_set_item(&self->leaves_map, (void*)(uint64_t)value, node_to_update);
         if (!map_is_present(&self->weights_map, 0))
