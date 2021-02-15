@@ -130,12 +130,12 @@ segment .text
         je current_is_left
             mov rdi, [rbp-16]
             mov rsi, 1
-            call bit_buffer_add_bit
+            call bit_buffer_push_bit
             jmp continue_recursion
         current_is_left:
             mov rdi, [rbp-16]
             mov rsi, 0
-            call bit_buffer_add_bit
+            call bit_buffer_push_bit
         continue_recursion:
             mov rdi, [rbp-8]
             mov rsi, [rbp-16]

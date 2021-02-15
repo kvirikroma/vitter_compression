@@ -12,7 +12,7 @@
 typedef struct
 {
     adaptive_tree tree;
-    bit_buffer* output_buffer;
+    bit_buffer output_buffer;
     void(*writer)(uint8_t* bytes, uint32_t count, void* params);
     void* writer_params;
 }

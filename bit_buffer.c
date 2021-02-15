@@ -27,7 +27,7 @@ void bit_buffer_clear(bit_buffer* self)
     self->last_item_size = 0;
 }
 
-void bit_buffer_add_bit(bit_buffer* self, bool bit_value)
+void bit_buffer_push_bit(bit_buffer* self, bool bit_value)
 {
     self->last_item &= ((uint64_t)bit_value) << self->last_item_size;
     self->last_item_size++;
@@ -77,7 +77,7 @@ void bit_buffer_reverse(bit_buffer* self)
     bit_buffer_init(&new_buffer);
     for (uint64_t i = bit_buffer_get_size(self); i >= 0; i--)
     {
-        bit_buffer_add_bit(&new_buffer, bit_buffer_get_bit(self, i));
+        bit_buffer_push_bit(&new_buffer, bit_buffer_get_bit(self, i));
     }
     bit_buffer_delete(self);
     self->data = new_buffer.data;
@@ -103,7 +103,7 @@ void bit_buffer_extend(bit_buffer* self, bit_buffer* other)
 {
     for (uint64_t i = 0; i < (other->data->length + other->last_item_size); i++)
     {
-        bit_buffer_add_bit(self, bit_buffer_get_bit(other, i));
+        bit_buffer_push_bit(self, bit_buffer_get_bit(other, i));
     }
 }
 
@@ -124,6 +124,6 @@ void bit_buffer_extend_from_memory(bit_buffer* self, uint8_t* data, uint32_t bit
 {
     for (uint64_t i = 0; i < bits_count * 8; i++)
     {
-        bit_buffer_add_bit(self, bit_array_get_bit(data, i));
+        bit_buffer_push_bit(self, bit_array_get_bit(data, i));
     }
 }

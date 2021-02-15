@@ -40,6 +40,19 @@ static void remove_hash_tables(hash_table* table, void* params)
     hash_table_delete(table);
 }
 
+// Return true if the path is righter then the other one
+static bool is_path_righter(bit_buffer* path, bit_buffer* other_path)
+{
+    for (uint32_t i = 0; i < min(2, bit_buffer_get_size(path), bit_buffer_get_size(other_path)); i++)
+    {
+        if ((uint8_t)bit_buffer_get_bit(path, i) > (uint8_t)bit_buffer_get_bit(other_path, i))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 static void find_highest_node_in_another_subtree(adaptive_node* node, adaptive_node** highest_so_far)
 {
     if (*highest_so_far == NULL)
@@ -52,7 +65,12 @@ static void find_highest_node_in_another_subtree(adaptive_node* node, adaptive_n
     bit_buffer_init(&highest_node_path_storage);
     adaptive_node_get_path(node, &node_path_storage);
     adaptive_node_get_path(*highest_so_far, &highest_node_path_storage);
-    if (bit_buffer_get_size(&node_path_storage) < bit_buffer_get_size(&highest_node_path_storage))
+    uint32_t node_path_size = bit_buffer_get_size(&node_path_storage);
+    uint32_t highest_node_path_size = bit_buffer_get_size(&highest_node_path_storage);
+    if (
+            (node_path_size < highest_node_path_size) ||
+            ((node_path_size == highest_node_path_size) && is_path_righter(&node_path_storage, &highest_node_path_storage))
+    )
     {
         if (! bit_buffer_starts_with(&node_path_storage, &highest_node_path_storage))
         {
@@ -96,12 +114,12 @@ void adaptive_tree_traversal(
     {
         if (current_node->left)
         {
-            bit_buffer_add_bit(current_path, 0);  // path for the next node
+            bit_buffer_push_bit(current_path, 0);  // path for the next node
             adaptive_tree_traversal(self, node_handler, params, current_path, (adaptive_node*)current_node->left);
         }
         if (current_node->right)
         {
-            bit_buffer_add_bit(current_path, 1);  // path for the next node
+            bit_buffer_push_bit(current_path, 1);  // path for the next node
             adaptive_tree_traversal(self, node_handler, params, current_path, (adaptive_node*)current_node->right);
         }
     }
@@ -126,7 +144,15 @@ static void check_node_children(adaptive_node* node)
 {
     if (node->left && node->right)
     {
-        if (((adaptive_node*)node->left)->weight > ((adaptive_node*)node->right)->weight)
+        uint64_t left_weight = ((adaptive_node*)node->left)->weight;
+        uint64_t right_weight = ((adaptive_node*)node->right)->weight;
+        if (
+                (left_weight > right_weight) || (
+                    (left_weight == right_weight) &&
+                    (adaptive_node_get_type((adaptive_node*)node->right) == NODE_TYPE_LEAF) &&
+                    (adaptive_node_get_type((adaptive_node*)node->left) == NODE_TYPE_INTERNAL)
+                )
+        )
         {
             adaptive_node_exchange((adaptive_node*)node->left, (adaptive_node*)node->right);
         }

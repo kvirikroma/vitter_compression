@@ -19,7 +19,7 @@ void bit_buffer_delete(bit_buffer*);
 
 void bit_buffer_clear(bit_buffer*);
 
-void bit_buffer_add_bit(bit_buffer*, bool);
+void bit_buffer_push_bit(bit_buffer*, bool);
 
 bool bit_buffer_pop_bit(bit_buffer*);
 

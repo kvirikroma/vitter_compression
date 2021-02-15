@@ -6,14 +6,24 @@
 #define DECODER_OUTPUT_BUFFER_SIZE 1024
 
 
+typedef enum
+{
+    STATE_IDLE,
+    STATE_READING_NODE,
+    STATE_READING_VALUE
+}
+decoding_state;
+
 typedef struct
 {
     adaptive_tree tree;
     uint8_t* output_buffer;
     uint32_t output_buffer_position;
-    bit_buffer input_buffer;
+    bit_buffer value_to_write;
     void(*writer)(uint8_t* bytes, uint32_t count, void* params);
     void* writer_params;
+    decoding_state current_state;
+    adaptive_node* current_node;
 }
 decoder;
 
