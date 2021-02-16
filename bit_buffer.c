@@ -33,7 +33,7 @@ void bit_buffer_push_bit(bit_buffer* self, bool bit_value)
     self->last_item_size++;
     if (self->last_item_size >= 64)
     {
-        array_append_value(self->data, self->last_item);
+        self->data = array_append_value(self->data, self->last_item);
         self->last_item_size = 0;
         self->last_item = 0;
     }

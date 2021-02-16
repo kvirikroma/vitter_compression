@@ -140,12 +140,45 @@ void adaptive_tree_traversal(
 
 void adaptive_tree_delete(adaptive_tree* self)
 {
+    map_iterate_values(&self->weights_map, (void(*)(void*, void*))remove_hash_tables, NULL);
     adaptive_tree_traversal(self, remove_node_in_traversal, self, NULL, NULL);
     map_delete(&self->leaves_map);
-    map_iterate_values(&self->weights_map, (void(*)(void*, void*))remove_hash_tables, NULL);
     map_delete(&self->weights_map);
     self->nyt_node = 0;
     self->root = 0;
+}
+
+static void exchange_nodes(adaptive_node* node, adaptive_node* other_node)
+{
+    if (((adaptive_node*)node->parent == other_node) || ((adaptive_node*)other_node->parent == node))
+    {
+        return;
+    }
+    if (node->parent)
+    {
+        if (((adaptive_node*)node->parent)->left == (struct adaptive_node*)node)
+        {
+            ((adaptive_node*)node->parent)->left = (struct adaptive_node*)other_node;
+        }
+        else
+        {
+            ((adaptive_node*)node->parent)->right = (struct adaptive_node*)other_node;
+        }
+    }
+    if (other_node->parent)
+    {
+        if (((adaptive_node*)other_node->parent)->left == (struct adaptive_node*)other_node)
+        {
+            ((adaptive_node*)other_node->parent)->left = (struct adaptive_node*)node;
+        }
+        else
+        {
+            ((adaptive_node*)other_node->parent)->right = (struct adaptive_node*)node;
+        }
+    }
+    adaptive_node* tmp = (adaptive_node*)other_node->parent;
+    other_node->parent = node->parent;
+    node->parent = (struct adaptive_node*)tmp;
 }
 
 static void check_node_children(adaptive_node* node)
@@ -162,7 +195,7 @@ static void check_node_children(adaptive_node* node)
                 )
         )
         {
-            adaptive_node_exchange((adaptive_node*)node->left, (adaptive_node*)node->right);
+            exchange_nodes((adaptive_node*)node->left, (adaptive_node*)node->right);
         }
     }
 }
@@ -179,18 +212,22 @@ static hash_table* create_weight_block(adaptive_tree* self, uint64_t weight)
     return new_table;
 }
 
-static void delete_weight_block(adaptive_tree* self, hash_table* block)
+static void delete_weight_block(adaptive_tree* self, uint64_t weight)
 {
-    hash_table_delete(block);
-    map_remove_item(&self->weights_map, block);
-    free(block);
+    hash_table* table_to_delete = map_get_item(&self->weights_map, (const void*)weight);
+    if (table_to_delete)
+    {
+        hash_table_delete(table_to_delete);
+        free(table_to_delete);
+    }
+    map_remove_item(&self->weights_map, (const void*)weight);
 }
 
 static void increase_weights(adaptive_tree* self, adaptive_node* node)
 {
     while (node)
     {
-        adaptive_node* highest_node = NULL;
+        adaptive_node* highest_node = node;
         hash_table_iterate(
             map_get_item(&self->weights_map, (const void*)node->weight),
             (void(*)(void*, void*))find_highest_node_in_another_subtree,
@@ -198,13 +235,13 @@ static void increase_weights(adaptive_tree* self, adaptive_node* node)
         );
         if (highest_node != node)
         {
-            adaptive_node_exchange(highest_node, node);
+            exchange_nodes(highest_node, node);
         }
         hash_table* old_weights_block = map_get_item(&self->weights_map, (const void*)node->weight);
         hash_table_remove_item(old_weights_block, node);
         if (old_weights_block->items_count == 0)
         {
-            delete_weight_block(self, old_weights_block);
+            delete_weight_block(self, node->weight);
         }
         node->weight++;
         hash_table* new_weight_block;

@@ -97,10 +97,10 @@ void* map_get_item(map* self, const void* key)
 void* map_remove_item(map* self, const void* key)
 {
     map_item item_to_remove = (map_item){.key = key, .storage = self, .value = NULL};
-    map_item* removed_item = hash_table_remove_item(&self->table, &item_to_remove);
     void* result = NULL;
-    if (removed_item)
+    if (hash_table_is_present(&self->table, &item_to_remove))
     {
+        map_item* removed_item = hash_table_remove_item(&self->table, &item_to_remove);
         result = removed_item->value;
         free(removed_item);
     }

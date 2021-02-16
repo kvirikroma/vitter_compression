@@ -82,10 +82,10 @@ int main(int argc, char** argv)
         bool is_eof = false;
         while(!is_eof)
         {
-            read(READ_BYTES_PER_ITERATION, &enc, mode);
+            is_eof = read(READ_BYTES_PER_ITERATION, &enc, mode);
         }
-        encoder_flush(&enc);
-        encoder_delete(&enc, false);
+        // encoder_flush(&enc);
+        // encoder_delete(&enc, false);
     }
     else
     {
@@ -94,11 +94,12 @@ int main(int argc, char** argv)
         bool is_eof = false;
         while(!is_eof)
         {
-            read(READ_BYTES_PER_ITERATION, &dec, mode);
+            is_eof = read(READ_BYTES_PER_ITERATION, &dec, mode);
         }
-        decoder_flush(&dec);
-        decoder_delete(&dec, false);
+        // decoder_flush(&dec);
+        // decoder_delete(&dec, false);
     }
+    //fflush(stdout);
 
     return 0;
 }

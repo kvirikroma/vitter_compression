@@ -70,15 +70,6 @@ segment .text
         call free
         ret
 
-    adaptive_node_exchange:
-        ;param rdi - node
-        ;param rsi - other node
-        mov rax, [rdi+adaptive_node.parent]
-        mov rcx, [rsi+adaptive_node.parent]
-        mov [rdi+adaptive_node.parent], rcx
-        mov [rsi+adaptive_node.parent], rax
-        ret
-
     adaptive_node_get_type:
         ;param rdi - node
         ;returns its type:
@@ -118,28 +109,32 @@ segment .text
             mov [rbp-16], rax
             call bit_buffer_init
         path_storage_created:
-        mov rdi, [rbp-8]
-        cmp qword [rdi+adaptive_node.parent], 0
-        jne angp_not_root_yet
-            mov rdi, [rbp-16]
-            call bit_buffer_reverse
-            jmp angp_end
-        angp_not_root_yet:
-        mov rax, [rdi+adaptive_node.parent]
-        cmp [rax+adaptive_node.left], rdi
-        je current_is_left
-            mov rdi, [rbp-16]
-            mov rsi, 1
-            call bit_buffer_push_bit
-            jmp continue_recursion
-        current_is_left:
-            mov rdi, [rbp-16]
-            mov rsi, 0
-            call bit_buffer_push_bit
-        continue_recursion:
             mov rdi, [rbp-8]
-            mov rsi, [rbp-16]
-            call adaptive_node_get_path
+            cmp qword [rdi+adaptive_node.parent], 0
+            jne angp_not_root_yet
+                mov rdi, [rbp-16]
+                call bit_buffer_reverse
+                jmp angp_end
+            angp_not_root_yet:
+            mov rax, [rdi+adaptive_node.parent]
+            cmp [rax+adaptive_node.left], rdi
+            je current_is_left
+                mov rdi, [rbp-16]
+                mov rsi, 1
+                call bit_buffer_push_bit
+                jmp angp_continue
+            current_is_left:
+                mov rdi, [rbp-16]
+                mov rsi, 0
+                call bit_buffer_push_bit
+                jmp angp_continue
+            angp_continue:
+                mov rax, [rbp-8]
+                mov rax, [rax+adaptive_node.parent]
+                ; cmp rax, [rbp-8]
+                ; je angp_end
+                mov [rbp-8], rax
+                jmp path_storage_created
 
         angp_end:
         mov rax, [rbp-16]

@@ -137,6 +137,7 @@ void* hash_table_remove_item(hash_table* self, const void* item)
     deque_node* node = find_node_by_value(deque_to_edit, item, self->comparison_function);
     if (node)
     {
+        void* result = (void*)node->data;
         if (deque_to_edit->first == node)
         {
             deque_pop_left(deque_to_edit);
@@ -153,7 +154,7 @@ void* hash_table_remove_item(hash_table* self, const void* item)
         }
         self->items_count--;
         check_for_space(self);
-        return node->data;
+        return result;
     }
     return NULL;
 }
