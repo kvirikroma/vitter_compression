@@ -45,7 +45,7 @@ void hash_table_delete(hash_table* self)
 static uint8_t calculate_actual_accuracy(hash_table* self)
 {
     double result = ((double)self->current_size - (double)self->items_count) / (double)self->current_size;
-    return (uint8_t)result;
+    return (uint8_t)(result * 100);
 }
 
 static void move_items(hash_table* self, deque* src_data, size_t size)
