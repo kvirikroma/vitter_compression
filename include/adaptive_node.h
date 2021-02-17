@@ -7,7 +7,7 @@
 #include "bit_buffer.h"
 
 
-typedef struct
+typedef struct adaptive_node
 {
     struct adaptive_node* parent;
     struct adaptive_node* left;

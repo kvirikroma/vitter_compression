@@ -6,7 +6,7 @@
 
 extern bool bit_array_get_bit(const void*, uint64_t);
 
-extern void bit_array_set_bit(void*, uint64_t, bool);
+// extern void bit_array_set_bit(void*, uint64_t, bool);
 
 
 #endif

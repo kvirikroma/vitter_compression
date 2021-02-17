@@ -98,8 +98,17 @@ void decoder_write(decoder* self, const uint8_t* data, uint32_t length)
                     else
                     {
                         adaptive_tree_update(&self->tree, self->current_node->value);
-                        self->current_node = self->tree.root;
-                        self->current_state = STATE_IDLE;
+                        self->output_buffer[self->output_buffer_position] = self->current_node->value;
+                        self->output_buffer_position++;
+                        if (bit_array_get_bit(data, i))
+                        {
+                            self->current_node = (adaptive_node*)self->tree.root->right;
+                        }
+                        else
+                        {
+                            self->current_node = (adaptive_node*)self->tree.root->left;
+                        }
+                        self->current_state = STATE_READING_NODE;
                     }
                 }
                 

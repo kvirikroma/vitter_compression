@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "include/adaptive_tree.h"
 #include "include/utils.h"
@@ -104,6 +105,7 @@ void adaptive_tree_init(adaptive_tree* self)
         (uint64_t(*)(const void*))leaf_hash_function,
         (bool(*)(const void*, const void*))leaf_comparison_function
     );
+    self->logs_file = fopen("/dev/tty", "w");
 }
 
 void adaptive_tree_traversal(
@@ -140,6 +142,8 @@ void adaptive_tree_traversal(
 
 void adaptive_tree_delete(adaptive_tree* self)
 {
+    fclose(self->logs_file);
+    self->logs_file = 0;
     map_iterate_values(&self->weights_map, (void(*)(void*, void*))remove_hash_tables, NULL);
     adaptive_tree_traversal(self, remove_node_in_traversal, self, NULL, NULL);
     map_delete(&self->leaves_map);
@@ -262,6 +266,92 @@ static void increase_weights(adaptive_tree* self, adaptive_node* node)
     }
 }
 
+static void print_node(adaptive_node* node, FILE* logs_file)
+{
+    fprintf(logs_file, "%u(%lu) ", (uint32_t)node->value, node->weight);
+}
+
+static void print_node_verbose(adaptive_node* node, FILE* logs_file)
+{
+    const char* node_type;
+    switch (adaptive_node_get_type(node))
+    {
+        case NODE_TYPE_NYT:
+        {
+            node_type = "NODE_TYPE_NYT";
+            break;
+        }
+        case NODE_TYPE_INTERNAL:
+        {
+            node_type = "NODE_TYPE_INTERNAL";
+            break;
+        }
+        case NODE_TYPE_LEAF:
+        {
+            node_type = "NODE_TYPE_LEAF";
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+    fprintf(
+        logs_file, "Node(address=%p, type=%s, value=%u, weight=%lu, parent=%p, left=%p, right=%p)",
+        node, node_type, node->value, node->weight, node->parent, node->left, node->right
+    );
+}
+
+void print_tree(adaptive_tree* self)
+{
+    deque node_container;
+    deque all_nodes;
+    deque_init(&all_nodes);
+    bit_buffer path_container;
+    uint32_t max_depth = 0;
+    bit_buffer_init(&path_container);
+    deque_init(&node_container);
+
+    deque_push_right(&node_container, (uint64_t)self->root);
+    deque_push_right(&all_nodes, (uint64_t)self->root);
+
+    while (node_container.len)
+    {
+        adaptive_node* node = (adaptive_node*)deque_pop_left(&node_container);
+        adaptive_node_get_path(node, &path_container);
+        uint32_t node_depth = bit_buffer_get_size(&path_container);
+        if (max_depth < node_depth)
+        {
+            max_depth = node_depth;
+            fprintf(self->logs_file, "\n");
+        }
+        bit_buffer_clear(&path_container);
+        print_node(node, self->logs_file);
+        if (node->left)
+        {
+            deque_push_right(&node_container, (uint64_t)node->left);
+            deque_push_right(&all_nodes, (uint64_t)node->left);
+        }
+        if (node->right)
+        {
+            deque_push_right(&node_container, (uint64_t)node->right);
+            deque_push_right(&all_nodes, (uint64_t)node->right);
+        }
+    }
+    
+    bit_buffer_delete(&path_container);
+    fprintf(self->logs_file, "\n\nAll nodes:\n");
+    while (all_nodes.len)
+    {
+        print_node_verbose((adaptive_node*)deque_pop_left(&all_nodes), self->logs_file);
+        if (all_nodes.len >= 1)
+        {
+            fprintf(self->logs_file, ",\n");
+        }
+    }
+    fprintf(self->logs_file, "\n\n\n");
+}
+
 void adaptive_tree_update(adaptive_tree* self, uint8_t value)
 {
     adaptive_node* node_to_update;
@@ -295,6 +385,7 @@ void adaptive_tree_update(adaptive_tree* self, uint8_t value)
         hash_table_insert_item(zero_block, (void*)new_internal_node);
     }
     increase_weights(self, node_to_update);
+    //print_tree(self);
 }
 
 uint8_t adaptive_tree_get_value(adaptive_tree* self, bit_buffer* path)

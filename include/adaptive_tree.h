@@ -1,6 +1,8 @@
 #ifndef ADAPTIVE_TREE_H
 #define ADAPTIVE_TREE_H
 
+#include <stdio.h>
+
 #include "adaptive_node.h"
 #include "deque.h"
 #include "map.h"
@@ -14,6 +16,7 @@ typedef struct
     adaptive_node* root;
     map leaves_map;  // map<uint8_t: adaptive_node*>
     map weights_map;  // map<uint64_t: hash_table<adaptive_node*>>
+    FILE* logs_file;
 }
 adaptive_tree;
 

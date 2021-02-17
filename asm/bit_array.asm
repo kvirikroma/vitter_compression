@@ -12,12 +12,12 @@ segment .text
         mov cl, 7  ; it's also 111b
         and sil, cl
         mov al, [rdi + rax]
-        sub cl, sil
+        mov cl, sil
         shr al, cl
         and eax, 1
         ret
 
-    bit_array_set_bit:
+    bit_array_set_bit:  ;WORKS IN DIFFERENT ORDER
         ; set value of bit by number
         ; param rdi - address of field
         ; param rsi - number of bit to set

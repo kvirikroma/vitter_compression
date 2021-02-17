@@ -46,10 +46,10 @@ bool bit_buffer_pop_bit(bit_buffer* self)
         self->last_item_size = 64;
         self->last_item = array_pop_value(self->data);
     }
-    uint64_t result = 1 << self->last_item_size;
+    uint64_t result = 1 << (self->last_item_size - 1);
     result &= self->last_item;
     self->last_item ^= result;
-    result >>= self->last_item_size;
+    result >>= (self->last_item_size - 1);
     self->last_item_size--;
     return (bool)result;
 }
