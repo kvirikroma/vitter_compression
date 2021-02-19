@@ -23,10 +23,10 @@ void write(const uint8_t* bytes, uint32_t count, FILE* output_file)
 }
 
 // Returns is_eof
-bool read(uint32_t bytes_count, void* coder, working_mode mode)
+bool read(uint32_t bytes_count, void* coder, working_mode mode, FILE* file)
 {
     uint8_t bytes[bytes_count];
-    uint32_t read_bytes = fread(bytes, sizeof(uint8_t), bytes_count, stdin);
+    uint32_t read_bytes = fread(bytes, sizeof(uint8_t), bytes_count, file);
     if (mode == MODE_DECODING)
     {
         decoder_write((decoder*)coder, bytes, read_bytes);
@@ -50,6 +50,7 @@ bool read(uint32_t bytes_count, void* coder, working_mode mode)
 
 int main(int argc, char** argv)
 {
+    FILE* file = stdin; //fopen("/home/roman/fastfs/license.vc", "r");
     bool compression_found = false;
     bool decompression_found = false;
     for (int i = 0; i < argc; i++)
@@ -82,7 +83,7 @@ int main(int argc, char** argv)
         bool is_eof = false;
         while(!is_eof)
         {
-            is_eof = read(READ_BYTES_PER_ITERATION, &enc, mode);
+            is_eof = read(READ_BYTES_PER_ITERATION, &enc, mode, file);
         }
         encoder_delete(&enc, false);
     }
@@ -93,7 +94,8 @@ int main(int argc, char** argv)
         bool is_eof = false;
         while(!is_eof)
         {
-            is_eof = read(READ_BYTES_PER_ITERATION, &dec, mode);
+            is_eof = read(READ_BYTES_PER_ITERATION, &dec, mode, file);
+            fflush(stdout);
         }
         decoder_delete(&dec, false);
     }

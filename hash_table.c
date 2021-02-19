@@ -54,7 +54,7 @@ static void move_items(hash_table* self, deque* src_data, size_t size)
     {
         while (src_data[i].len)
         {
-            hash_table_insert_item(self, (void*)deque_pop_left(&src_data[i]));
+            hash_table_insert_item(self, (void*)deque_pop_left(src_data + i));
         }
     }
 }

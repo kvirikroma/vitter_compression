@@ -44,9 +44,16 @@ static void remove_hash_tables(hash_table* table, void* params)
 // Return true if the path is righter then the other one
 static bool is_path_righter(bit_buffer* path, bit_buffer* other_path)
 {
-    for (uint32_t i = 0; i < min(2, bit_buffer_get_size(path), bit_buffer_get_size(other_path)); i++)
+    volatile uint32_t min_path_size = min(2, bit_buffer_get_size(path), bit_buffer_get_size(other_path));
+    for (uint32_t i = 0; i < min_path_size; i++)
     {
-        if ((uint8_t)bit_buffer_get_bit(path, i) > (uint8_t)bit_buffer_get_bit(other_path, i))
+        volatile uint8_t path_bit = (uint8_t)bit_buffer_get_bit(path, i);
+        volatile uint8_t other_path_bit = (uint8_t)bit_buffer_get_bit(other_path, i);
+        if (path_bit < other_path_bit)
+        {
+            return false;
+        }
+        if (path_bit > other_path_bit)
         {
             return true;
         }
@@ -105,7 +112,7 @@ void adaptive_tree_init(adaptive_tree* self)
         (uint64_t(*)(const void*))leaf_hash_function,
         (bool(*)(const void*, const void*))leaf_comparison_function
     );
-    self->logs_file = fopen("/dev/tty", "w");
+    self->logs_file = NULL; //fopen("/dev/tty", "w");
 }
 
 void adaptive_tree_traversal(
@@ -142,7 +149,10 @@ void adaptive_tree_traversal(
 
 void adaptive_tree_delete(adaptive_tree* self)
 {
-    fclose(self->logs_file);
+    if (self->logs_file)
+    {
+        fclose(self->logs_file);
+    }
     self->logs_file = 0;
     map_iterate_values(&self->weights_map, (void(*)(void*, void*))remove_hash_tables, NULL);
     adaptive_tree_traversal(self, remove_node_in_traversal, self, NULL, NULL);
@@ -154,38 +164,40 @@ void adaptive_tree_delete(adaptive_tree* self)
 
 static void exchange_nodes(adaptive_node* node, adaptive_node* other_node)
 {
-    if (((adaptive_node*)node->parent == other_node) || ((adaptive_node*)other_node->parent == node))
+    if ((node->parent == other_node) || (other_node->parent == node))
     {
         return;
     }
+    adaptive_node* old_node_parent_left = node->parent->left;
+    adaptive_node* old_other_parent_left = other_node->parent->left;
     if (node->parent)
     {
-        if (((adaptive_node*)node->parent)->left == (struct adaptive_node*)node)
+        if (old_node_parent_left == node)
         {
-            ((adaptive_node*)node->parent)->left = (struct adaptive_node*)other_node;
+            node->parent->left = other_node;
         }
         else
         {
-            ((adaptive_node*)node->parent)->right = (struct adaptive_node*)other_node;
+            node->parent->right = other_node;
         }
     }
     if (other_node->parent)
     {
-        if (((adaptive_node*)other_node->parent)->left == (struct adaptive_node*)other_node)
+        if (old_other_parent_left == other_node)
         {
-            ((adaptive_node*)other_node->parent)->left = (struct adaptive_node*)node;
+            other_node->parent->left = node;
         }
         else
         {
-            ((adaptive_node*)other_node->parent)->right = (struct adaptive_node*)node;
+            other_node->parent->right = node;
         }
     }
-    adaptive_node* tmp = (adaptive_node*)other_node->parent;
+    adaptive_node* tmp = other_node->parent;
     other_node->parent = node->parent;
-    node->parent = (struct adaptive_node*)tmp;
+    node->parent = tmp;
 }
 
-static void check_node_children(adaptive_node* node)
+ void check_node_children(adaptive_node* node)
 {
     if (node->left && node->right)
     {
@@ -193,9 +205,10 @@ static void check_node_children(adaptive_node* node)
         uint64_t right_weight = ((adaptive_node*)node->right)->weight;
         if (
                 (left_weight > right_weight) || (
-                    (left_weight == right_weight) &&
-                    (adaptive_node_get_type((adaptive_node*)node->right) == NODE_TYPE_LEAF) &&
-                    (adaptive_node_get_type((adaptive_node*)node->left) == NODE_TYPE_INTERNAL)
+                    (left_weight == right_weight) && (
+                        (adaptive_node_get_type((adaptive_node*)node->right) != NODE_TYPE_INTERNAL) &&
+                        (adaptive_node_get_type((adaptive_node*)node->left) == NODE_TYPE_INTERNAL)
+                    )
                 )
         )
         {
@@ -240,6 +253,8 @@ static void increase_weights(adaptive_tree* self, adaptive_node* node)
         if (highest_node != node)
         {
             exchange_nodes(highest_node, node);
+            check_node_children(node->parent);
+            check_node_children(highest_node->parent);
         }
         hash_table* old_weights_block = map_get_item(&self->weights_map, (const void*)node->weight);
         hash_table_remove_item(old_weights_block, node);
@@ -266,12 +281,29 @@ static void increase_weights(adaptive_tree* self, adaptive_node* node)
     }
 }
 
-static void print_node(adaptive_node* node, FILE* logs_file)
+static void print_node(const adaptive_node* node, FILE* logs_file)
 {
-    fprintf(logs_file, "%u(%lu) ", (uint32_t)node->value, node->weight);
+    switch (adaptive_node_get_type(node))
+    {
+        case NODE_TYPE_LEAF:
+        {
+            fprintf(logs_file, "[%c|%lu] ", (uint32_t)node->value, node->weight);
+            break;
+        }
+        case NODE_TYPE_INTERNAL:
+        {
+            fprintf(logs_file, "(%lu) ", node->weight);
+            break;
+        }
+        case NODE_TYPE_NYT:
+        {
+            fprintf(logs_file, "[NYT] ");
+            break;
+        }
+    }
 }
 
-static void print_node_verbose(adaptive_node* node, FILE* logs_file)
+static void print_node_verbose(const adaptive_node* node, FILE* logs_file)
 {
     const char* node_type;
     switch (adaptive_node_get_type(node))
@@ -302,7 +334,7 @@ static void print_node_verbose(adaptive_node* node, FILE* logs_file)
     );
 }
 
-void print_tree(adaptive_tree* self)
+void print_tree(const adaptive_tree* self)
 {
     deque node_container;
     deque all_nodes;
@@ -385,7 +417,11 @@ void adaptive_tree_update(adaptive_tree* self, uint8_t value)
         hash_table_insert_item(zero_block, (void*)new_internal_node);
     }
     increase_weights(self, node_to_update);
-    //print_tree(self);
+    if (self->logs_file)
+    {
+        fprintf(self->logs_file, "Adding a '%c' symbol\n", value);
+        print_tree(self);
+    }
 }
 
 uint8_t adaptive_tree_get_value(adaptive_tree* self, bit_buffer* path)

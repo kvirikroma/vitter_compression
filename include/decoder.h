@@ -8,7 +8,6 @@
 
 typedef enum
 {
-    STATE_IDLE,
     STATE_READING_NODE,
     STATE_READING_VALUE
 }
