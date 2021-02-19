@@ -67,11 +67,13 @@ static void check_for_space(hash_table* self)
     if (actual_accuracy < self->accuracy)
     {
         self->current_size <<= 1;  // *= 2
+        self->current_size--;
         actions_required = true;
     }
     else if (actual_accuracy >= SHRINKING_ACCURACY && self->items_count >= SHRINKING_MIN_ITEMS)
     {
-        self->current_size >>= 1;  // *= 2
+        self->current_size++;
+        self->current_size >>= 1;  // /= 2
         actions_required = true;
     }
     if (actions_required)
