@@ -122,7 +122,7 @@ bool bit_buffer_starts_with(bit_buffer* self, bit_buffer* other)
 
 void bit_buffer_extend_from_memory(bit_buffer* self, const uint8_t* data, uint32_t bits_count)
 {
-    for (uint64_t i = 0; i < bits_count * 8; i++)
+    for (uint64_t i = 0; i < bits_count; i++)
     {
         bit_buffer_push_bit(self, bit_array_get_bit(data, i));
     }

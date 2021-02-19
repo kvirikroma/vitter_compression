@@ -61,32 +61,38 @@ static bool is_path_righter(bit_buffer* path, bit_buffer* other_path)
     return false;
 }
 
-static void find_highest_node_in_another_subtree(const adaptive_node* node, const adaptive_node** highest_so_far)
+typedef struct fhnias_params
 {
-    if (*highest_so_far == NULL)
-    {
-        *highest_so_far = node;
-    }
+    adaptive_node* node;
+    adaptive_node* highest_so_far;
     bit_buffer node_path_storage;
+    bit_buffer current_node_path_storage;
     bit_buffer highest_node_path_storage;
-    bit_buffer_init(&node_path_storage);
-    bit_buffer_init(&highest_node_path_storage);
-    adaptive_node_get_path(node, &node_path_storage);
-    adaptive_node_get_path(*highest_so_far, &highest_node_path_storage);
-    uint32_t node_path_size = bit_buffer_get_size(&node_path_storage);
-    uint32_t highest_node_path_size = bit_buffer_get_size(&highest_node_path_storage);
+}
+fhnias_params;
+
+static void find_highest_node_in_another_subtree(adaptive_node* current_node, fhnias_params* params)
+{
+    if (params->highest_so_far == NULL)
+    {
+        params->highest_so_far = current_node;
+    }
+    bit_buffer_clear(&params->current_node_path_storage);
+    bit_buffer_clear(&params->highest_node_path_storage);
+    adaptive_node_get_path(current_node, &params->current_node_path_storage);
+    adaptive_node_get_path(params->highest_so_far, &params->highest_node_path_storage);
+    uint32_t current_node_path_size = bit_buffer_get_size(&params->current_node_path_storage);
+    uint32_t highest_node_path_size = bit_buffer_get_size(&params->highest_node_path_storage);
     if (
-            (node_path_size < highest_node_path_size) ||
-            ((node_path_size == highest_node_path_size) && is_path_righter(&node_path_storage, &highest_node_path_storage))
+            (current_node_path_size < highest_node_path_size) ||
+            ((current_node_path_size == highest_node_path_size) && is_path_righter(&params->current_node_path_storage, &params->highest_node_path_storage))
     )
     {
-        if (! bit_buffer_starts_with(&node_path_storage, &highest_node_path_storage))
+        if (! bit_buffer_starts_with(&params->node_path_storage, &params->current_node_path_storage))
         {
-            *highest_so_far = node;
+            params->highest_so_far = current_node;
         }
     }
-    bit_buffer_delete(&node_path_storage);
-    bit_buffer_delete(&highest_node_path_storage);
 }
 
 static void remove_node_in_traversal(adaptive_node* node, bit_buffer* path, void* params)
@@ -242,19 +248,26 @@ static void delete_weight_block(adaptive_tree* self, uint64_t weight)
 
 static void increase_weights(adaptive_tree* self, adaptive_node* node)
 {
+    fhnias_params iteration_params;
+    bit_buffer_init(&iteration_params.node_path_storage);
+    bit_buffer_init(&iteration_params.current_node_path_storage);
+    bit_buffer_init(&iteration_params.highest_node_path_storage);
     while (node)
     {
-        adaptive_node* highest_node = node;
+        bit_buffer_clear(&iteration_params.node_path_storage);
+        adaptive_node_get_path(node, &iteration_params.node_path_storage);
+        iteration_params.node = node;
+        iteration_params.highest_so_far = node;
         hash_table_iterate(
             map_get_item(&self->weights_map, (const void*)node->weight),
             (void(*)(void*, void*))find_highest_node_in_another_subtree,
-            &highest_node
+            &iteration_params
         );
-        if (highest_node != node)
+        if (iteration_params.highest_so_far != node)
         {
-            exchange_nodes(highest_node, node);
+            exchange_nodes(iteration_params.highest_so_far, node);
             check_node_children(node->parent);
-            check_node_children(highest_node->parent);
+            check_node_children(iteration_params.highest_so_far->parent);
         }
         hash_table* old_weights_block = map_get_item(&self->weights_map, (const void*)node->weight);
         hash_table_remove_item(old_weights_block, node);
@@ -279,6 +292,9 @@ static void increase_weights(adaptive_tree* self, adaptive_node* node)
         }
         node = (adaptive_node*)node->parent;
     }
+    bit_buffer_delete(&iteration_params.node_path_storage);
+    bit_buffer_delete(&iteration_params.current_node_path_storage);
+    bit_buffer_delete(&iteration_params.highest_node_path_storage);
 }
 
 static void print_node(const adaptive_node* node, FILE* logs_file)
