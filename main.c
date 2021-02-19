@@ -6,7 +6,7 @@
 #include "include/encoder.h"
 #include "include/decoder.h"
 
-#define READ_BYTES_PER_ITERATION 1024
+#define READ_BYTES_PER_ITERATION 20480
 
 
 typedef enum
@@ -50,25 +50,31 @@ bool read(uint32_t bytes_count, void* coder, working_mode mode, FILE* file)
 
 int main(int argc, char** argv)
 {
-    FILE* file = stdin; //fopen("/home/roman/fastfs/license.vc", "r");
+    FILE* file = stdin;
     bool compression_found = false;
     bool decompression_found = false;
-    for (int i = 0; i < argc; i++)
+    for (int i = 1; i < argc; i++)
     {
         if (strcmp(argv[i], "--compress") == 0)
         {
             compression_found = true;
             continue;
         }
-        if (strcmp(argv[i], "--decompress") == 0)
+        else if (strcmp(argv[i], "--decompress") == 0)
         {
             decompression_found = true;
             continue;
         }
+        else
+        {
+            fprintf(stderr, "Unknown flag \"%s\"\n", argv[i]);
+            exit(1);
+        }
     }
     if (compression_found && decompression_found)
     {
-        fprintf(stderr, "%s\n", "Contradictory flags found. Exiting");
+        fprintf(stderr, "Contradictory flags found. Exiting\n");
+        exit(1);
     }
     working_mode mode = MODE_ENCODING;
     if (decompression_found)

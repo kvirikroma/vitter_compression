@@ -48,11 +48,7 @@ void encoder_write_bytes(encoder* self, const uint8_t* data, uint32_t length)
             adaptive_node_get_path(self->tree.nyt_node, &path_holder);
             bit_buffer_extend(&self->output_buffer, &path_holder);
             bit_buffer_clear(&path_holder);
-            for (uint8_t bit = 0; bit < 8; bit++)
-            {
-                bool current_bit = (data[i] >> bit) & 1;
-                bit_buffer_push_bit(&self->output_buffer, current_bit);
-            }
+            bit_buffer_push_byte(&self->output_buffer, data[i]);
         }
         adaptive_tree_update(&self->tree, data[i]);
         if (bit_buffer_get_size(&self->output_buffer) >= ENCODER_FLUSH_ON_BITS)

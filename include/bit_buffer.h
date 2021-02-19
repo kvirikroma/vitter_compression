@@ -37,5 +37,7 @@ bool bit_buffer_starts_with(bit_buffer* self, bit_buffer* other);
 
 void bit_buffer_extend_from_memory(bit_buffer*, const uint8_t*, uint32_t);
 
+void bit_buffer_push_byte(bit_buffer*, uint8_t);
+
 
 #endif

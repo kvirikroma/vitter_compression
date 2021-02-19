@@ -127,3 +127,18 @@ void bit_buffer_extend_from_memory(bit_buffer* self, const uint8_t* data, uint32
         bit_buffer_push_bit(self, bit_array_get_bit(data, i));
     }
 }
+
+void bit_buffer_push_byte(bit_buffer* self, uint8_t byte)
+{
+    uint64_t byte64 = (uint64_t)byte;
+    uint64_t max_val = (sizeof(self->last_item) * 8) - 9;
+    if (self->last_item_size < max_val)
+    {
+        self->last_item |= (byte64 << self->last_item_size);
+        self->last_item_size += 8;
+    }
+    else
+    {
+        bit_buffer_extend_from_memory(self, &byte, 8);
+    }
+}
