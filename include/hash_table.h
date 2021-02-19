@@ -18,7 +18,7 @@ typedef struct
 }
 hash_table;
 
-#define INIT_DATA_SIZE      16
+#define INIT_DATA_SIZE      15
 #define MIN_ACCURACY        8
 #define MAX_ACCURACY        90
 #define SHRINKING_ACCURACY  98
