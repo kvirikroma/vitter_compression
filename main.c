@@ -2,11 +2,12 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <signal.h>
 
 #include "include/encoder.h"
 #include "include/decoder.h"
 
-#define READ_BYTES_PER_ITERATION 20480
+#define READ_BYTES_PER_ITERATION 204800
 
 
 typedef enum
@@ -15,6 +16,55 @@ typedef enum
     MODE_DECODING
 }
 working_mode;
+
+
+working_mode* global_mode_ptr;
+void* global_coder_ptr;
+
+
+void stop(int sig)
+{
+    switch (sig)
+    {
+        case SIGINT:
+        case SIGTERM:
+        case SIGQUIT:
+        {
+            if (global_coder_ptr && global_mode_ptr)
+            {
+                switch (*global_mode_ptr)
+                {
+                    case MODE_DECODING:
+                    {
+                        decoder_delete((decoder*)global_coder_ptr, false);
+                        global_coder_ptr = NULL;
+                        break;
+                    }
+                    case MODE_ENCODING:
+                    {
+                        encoder_delete((encoder*)global_coder_ptr, false);
+                        global_coder_ptr = NULL;
+                        break;
+                    }
+                    default:
+                    {
+                        break;
+                    }
+                }
+            }
+            FILE* terminal = fopen("/dev/tty", "w");
+            fprintf(terminal, "\n");
+            fclose(terminal);
+            exit(0);
+            break;
+        }
+        
+        default:
+        {
+            break;
+        }
+    }
+}
 
 
 void write(const uint8_t* bytes, uint32_t count, FILE* output_file)
@@ -50,6 +100,11 @@ bool read(uint32_t bytes_count, void* coder, working_mode mode, FILE* file)
 
 int main(int argc, char** argv)
 {
+    global_mode_ptr = 0;
+    global_coder_ptr = 0;
+    signal(SIGTERM, stop);
+    signal(SIGINT, stop);
+    signal(SIGQUIT, stop);
     FILE* file = stdin;
     bool compression_found = false;
     bool decompression_found = false;
@@ -81,10 +136,12 @@ int main(int argc, char** argv)
     {
         mode = MODE_DECODING;
     }
+    global_mode_ptr = &mode;
 
     if (mode == MODE_ENCODING)
     {
         encoder enc;
+        global_coder_ptr = &enc;
         encoder_init(&enc, (void(*)(const uint8_t*, uint32_t, void*))write, stdout);
         bool is_eof = false;
         while(!is_eof)
@@ -92,18 +149,20 @@ int main(int argc, char** argv)
             is_eof = read(READ_BYTES_PER_ITERATION, &enc, mode, file);
         }
         encoder_delete(&enc, false);
+        global_coder_ptr = NULL;
     }
     else
     {
         decoder dec;
+        global_coder_ptr = &dec;
         decoder_init(&dec, (void(*)(const uint8_t*, uint32_t, void*))write, stdout);
         bool is_eof = false;
         while(!is_eof)
         {
             is_eof = read(READ_BYTES_PER_ITERATION, &dec, mode, file);
-            fflush(stdout);
         }
         decoder_delete(&dec, false);
+        global_coder_ptr = NULL;
     }
     fflush(stdout);
 
