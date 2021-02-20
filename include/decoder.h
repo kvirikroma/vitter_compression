@@ -3,7 +3,7 @@
 
 #include "adaptive_tree.h"
 
-#define DECODER_OUTPUT_BUFFER_SIZE 10240
+#define DECODER_OUTPUT_BUFFER_SIZE 204800
 
 
 typedef enum
