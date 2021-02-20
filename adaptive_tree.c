@@ -250,12 +250,11 @@ static void increase_weights(adaptive_tree* self, adaptive_node* node)
 {
     fhnias_params iteration_params;
     bit_buffer_init(&iteration_params.node_path_storage);
+    adaptive_node_get_path(node, &iteration_params.node_path_storage);
     bit_buffer_init(&iteration_params.current_node_path_storage);
     bit_buffer_init(&iteration_params.highest_node_path_storage);
     while (node)
     {
-        bit_buffer_clear(&iteration_params.node_path_storage);
-        adaptive_node_get_path(node, &iteration_params.node_path_storage);
         iteration_params.node = node;
         iteration_params.highest_so_far = node;
         hash_table_iterate(
@@ -291,6 +290,7 @@ static void increase_weights(adaptive_tree* self, adaptive_node* node)
             check_node_children(node);
         }
         node = (adaptive_node*)node->parent;
+        bit_buffer_pop_bit(&iteration_params.node_path_storage);
     }
     bit_buffer_delete(&iteration_params.node_path_storage);
     bit_buffer_delete(&iteration_params.current_node_path_storage);

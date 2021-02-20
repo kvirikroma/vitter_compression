@@ -107,6 +107,14 @@ void bit_buffer_extend(bit_buffer* self, bit_buffer* other)
     }
 }
 
+void bit_buffer_extend_reversed(bit_buffer* self, bit_buffer* other)
+{
+    for (uint64_t i = (other->data->length + other->last_item_size); i > 0; i--)
+    {
+        bit_buffer_push_bit(self, bit_buffer_get_bit(other, i - 1));
+    }
+}
+
 bool bit_buffer_starts_with(bit_buffer* self, bit_buffer* other)
 {
     uint64_t min_size = min(2, bit_buffer_get_size(self), bit_buffer_get_size(other));

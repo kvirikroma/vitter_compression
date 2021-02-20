@@ -17,5 +17,6 @@ extern bit_buffer_get_size
 extern bit_buffer_reverse
 extern bit_buffer_get_full_part
 extern bit_buffer_extend
+extern bit_buffer_extend_reversed
 
 %endif

@@ -92,52 +92,39 @@ segment .text
 
     adaptive_node_get_path:
         ;param rdi - node
-        ;param rsi - path to complete (only for the recursion), should be a nullprt (or empty one) on 1st call
-        ;returns bit_buffer with path from root to the node
-        push rbp
-        mov rbp, rsp
+        ;param rsi - path to complete (must be empty!)
+        push r15
+        push r14
+        push r13
         
-        push rdi  ; [rbp-8]  - node
-        push rsi  ; [rbp-16] - path
-        cmp qword [rbp-16], 0
-        jne path_storage_created
-            mov rdi, BIT_BUFFER_SIZE
-            call malloc
-            mov rdi, rax
-            call check_pointer_after_malloc
-            mov rdi, rax
-            mov [rbp-16], rax
-            call bit_buffer_init
+        mov r15, rdi  ; r15 - node
+        mov r14, rsi  ; r14 - path
         path_storage_created:
-            mov rdi, [rbp-8]
-            cmp qword [rdi+adaptive_node.parent], 0
+            mov r13, [r15+adaptive_node.parent]  ; r13 - parent
+            cmp qword r13, 0
             jne angp_not_root_yet
-                mov rdi, [rbp-16]
+                mov rdi, r14
                 call bit_buffer_reverse
                 jmp angp_end
             angp_not_root_yet:
-            mov rax, [rdi+adaptive_node.parent]
-            cmp [rax+adaptive_node.left], rdi
+            cmp [r13+adaptive_node.left], r15
             je current_is_left
-                mov rdi, [rbp-16]
+                mov rdi, r14
                 mov rsi, 1
                 call bit_buffer_push_bit
                 jmp angp_continue
             current_is_left:
-                mov rdi, [rbp-16]
+                mov rdi, r14
                 mov rsi, 0
                 call bit_buffer_push_bit
                 jmp angp_continue
             angp_continue:
-                mov rax, [rbp-8]
-                mov rax, [rax+adaptive_node.parent]
-                ; cmp rax, [rbp-8]
-                ; je angp_end
-                mov [rbp-8], rax
+                mov r15, r13
                 jmp path_storage_created
 
         angp_end:
-        mov rax, [rbp-16]
-        leave
+        pop r13
+        pop r14
+        pop r15
         ret
 
