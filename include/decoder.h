@@ -35,5 +35,7 @@ void decoder_write(decoder*, const uint8_t*, uint32_t);
 
 void decoder_flush(decoder*);
 
+void decoder_final_flush(decoder*);
+
 
 #endif

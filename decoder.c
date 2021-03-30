@@ -133,3 +133,12 @@ void decoder_flush(decoder* self)
     self->writer(self->output_buffer, self->output_buffer_position, self->writer_params);
     self->output_buffer_position = 0;
 }
+
+void decoder_final_flush(decoder* self)
+{
+    if (adaptive_node_get_type(self->current_node) == NODE_TYPE_LEAF)
+    {
+        write_value_to_buffer(self, self->current_node->value);
+    }
+    decoder_flush(self);
+}

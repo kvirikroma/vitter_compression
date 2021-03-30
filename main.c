@@ -148,6 +148,7 @@ int main(int argc, char** argv)
         {
             is_eof = read(READ_BYTES_PER_ITERATION, &enc, mode, file);
         }
+        encoder_flush(&enc);
         encoder_delete(&enc, false);
         global_coder_ptr = NULL;
     }
@@ -161,6 +162,7 @@ int main(int argc, char** argv)
         {
             is_eof = read(READ_BYTES_PER_ITERATION, &dec, mode, file);
         }
+        decoder_final_flush(&dec);
         decoder_delete(&dec, false);
         global_coder_ptr = NULL;
     }
