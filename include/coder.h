@@ -6,8 +6,6 @@
 #include "adaptive_tree.h"
 
 
-struct coder_vtbl;
-
 typedef struct coder
 {
     adaptive_tree tree;
