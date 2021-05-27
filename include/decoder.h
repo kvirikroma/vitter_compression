@@ -2,6 +2,7 @@
 #define DECODER_H
 
 #include "adaptive_tree.h"
+#include "coder.h"
 
 #define DECODER_OUTPUT_BUFFER_SIZE 204800
 
@@ -13,27 +14,29 @@ typedef enum
 }
 decoding_state;
 
-typedef struct
+typedef struct decoder
 {
-    adaptive_tree tree;
+    coder base;
     uint8_t* output_buffer;
     uint32_t output_buffer_position;
     bit_buffer value_to_write;
-    void(*writer)(const uint8_t* bytes, uint32_t count, void* params);
-    void* writer_params;
     decoding_state current_state;
     adaptive_node* current_node;
+    struct
+    {
+        void(*flush_final)(struct decoder*);
+    } vtbl;
 }
 decoder;
 
 
 void decoder_init(decoder*, void(*)(const uint8_t*, uint32_t, void*), void*);
 
-void decoder_delete(decoder*, bool);
+void decoder_delete(coder*, bool);
 
-void decoder_write(decoder*, const uint8_t*, uint32_t);
+void decoder_write(coder*, const uint8_t*, uint32_t);
 
-void decoder_flush(decoder*);
+void decoder_flush(coder*);
 
 void decoder_final_flush(decoder*);
 

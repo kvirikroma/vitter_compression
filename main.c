@@ -6,6 +6,7 @@
 
 #include "include/encoder.h"
 #include "include/decoder.h"
+#include "include/utils.h"
 
 #define READ_BYTES_PER_ITERATION 204800
 
@@ -18,8 +19,7 @@ typedef enum
 working_mode;
 
 
-working_mode* global_mode_ptr;
-void* global_coder_ptr;
+coder* coder_in_use;
 
 
 void stop(int sig)
@@ -30,27 +30,9 @@ void stop(int sig)
         case SIGTERM:
         case SIGQUIT:
         {
-            if (global_coder_ptr && global_mode_ptr)
+            if (coder_in_use)
             {
-                switch (*global_mode_ptr)
-                {
-                    case MODE_DECODING:
-                    {
-                        decoder_delete((decoder*)global_coder_ptr, false);
-                        global_coder_ptr = NULL;
-                        break;
-                    }
-                    case MODE_ENCODING:
-                    {
-                        encoder_delete((encoder*)global_coder_ptr, false);
-                        global_coder_ptr = NULL;
-                        break;
-                    }
-                    default:
-                    {
-                        break;
-                    }
-                }
+                coder_in_use->vtbl.deinit(coder_in_use, false);
             }
             FILE* terminal = fopen("/dev/tty", "w");
             fprintf(terminal, "\n");
@@ -73,35 +55,22 @@ void write(const uint8_t* bytes, uint32_t count, FILE* output_file)
 }
 
 // Returns is_eof
-bool read(uint32_t bytes_count, void* coder, working_mode mode, FILE* file)
+bool read(uint32_t bytes_count, coder* coder, working_mode mode, FILE* file)
 {
     uint8_t bytes[bytes_count];
     uint32_t read_bytes = fread(bytes, sizeof(uint8_t), bytes_count, file);
-    if (mode == MODE_DECODING)
+    coder->vtbl.write(coder, bytes, read_bytes);
+    if (read_bytes != bytes_count)
     {
-        decoder_write((decoder*)coder, bytes, read_bytes);
-        if (read_bytes != bytes_count)
-        {
-            decoder_flush((decoder*)coder);
-        }
-    }
-    else
-    {
-        encoder_write_bytes((encoder*)coder, bytes, read_bytes);
-        if (read_bytes != bytes_count)
-        {
-            encoder_flush((encoder*)coder);
-        }
+        coder->vtbl.flush(coder);
     }
     return read_bytes != bytes_count;
-    
 }
 
 
 int main(int argc, char** argv)
 {
-    global_mode_ptr = 0;
-    global_coder_ptr = 0;
+    coder_in_use = NULL;
     signal(SIGTERM, stop);
     signal(SIGINT, stop);
     signal(SIGQUIT, stop);
@@ -136,36 +105,30 @@ int main(int argc, char** argv)
     {
         mode = MODE_DECODING;
     }
-    global_mode_ptr = &mode;
 
+    coder_in_use = malloc(max(2, sizeof(encoder), sizeof(decoder)));
     if (mode == MODE_ENCODING)
     {
-        encoder enc;
-        global_coder_ptr = &enc;
-        encoder_init(&enc, (void(*)(const uint8_t*, uint32_t, void*))write, stdout);
-        bool is_eof = false;
-        while(!is_eof)
-        {
-            is_eof = read(READ_BYTES_PER_ITERATION, &enc, mode, file);
-        }
-        encoder_flush(&enc);
-        encoder_delete(&enc, false);
-        global_coder_ptr = NULL;
+        encoder_init((encoder*)coder_in_use, (void(*)(const uint8_t*, uint32_t, void*))write, stdout);
     }
     else
     {
-        decoder dec;
-        global_coder_ptr = &dec;
-        decoder_init(&dec, (void(*)(const uint8_t*, uint32_t, void*))write, stdout);
-        bool is_eof = false;
-        while(!is_eof)
-        {
-            is_eof = read(READ_BYTES_PER_ITERATION, &dec, mode, file);
-        }
-        decoder_final_flush(&dec);
-        decoder_delete(&dec, false);
-        global_coder_ptr = NULL;
+        decoder_init((decoder*)coder_in_use, (void(*)(const uint8_t*, uint32_t, void*))write, stdout);
     }
+
+    bool is_eof = false;
+    while(!is_eof)
+    {
+        is_eof = read(READ_BYTES_PER_ITERATION, coder_in_use, mode, file);
+    }
+    coder_in_use->vtbl.flush(coder_in_use);
+    if (mode == MODE_DECODING)
+    {
+        ((decoder*)coder_in_use)->vtbl.flush_final((decoder*)coder_in_use);
+    }
+    coder_in_use->vtbl.deinit(coder_in_use, false);
+    free(coder_in_use);
+    coder_in_use = NULL;
     fflush(stdout);
 
     return 0;

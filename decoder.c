@@ -7,17 +7,22 @@
 
 void decoder_init(decoder* self, void(*writer)(const uint8_t*, uint32_t, void*), void* writer_params)
 {
-    self->writer_params = writer_params;
-    self->writer = writer;
-    adaptive_tree_init(&self->tree);
+    self->base.writer_params = writer_params;
+    self->base.writer = writer;
+    adaptive_tree_init(&self->base.tree);
     bit_buffer_init(&self->value_to_write);
     self->output_buffer_position = 0;
-    self->current_node = self->tree.root;
+    self->current_node = self->base.tree.root;
     self->current_state = STATE_READING_VALUE;
     self->output_buffer = check_pointer_after_malloc(malloc(DECODER_OUTPUT_BUFFER_SIZE));
+
+    self->base.vtbl.write = decoder_write;
+    self->base.vtbl.flush = decoder_flush;
+    self->base.vtbl.deinit = decoder_delete;
+    self->vtbl.flush_final = decoder_final_flush;
 }
 
-void decoder_delete(decoder* self, bool free_params)
+void decoder_delete(coder* self, bool free_params)
 {
     if (free_params)
     {
@@ -26,12 +31,12 @@ void decoder_delete(decoder* self, bool free_params)
     self->writer = NULL;
     self->writer_params = NULL;
     adaptive_tree_delete(&self->tree);
-    bit_buffer_delete(&self->value_to_write);
-    free(self->output_buffer);
-    self->output_buffer = NULL;
-    self->output_buffer_position = 0;
-    self->current_node = NULL;
-    self->current_state = STATE_READING_VALUE;
+    bit_buffer_delete(&((decoder*)self)->value_to_write);
+    free(((decoder*)self)->output_buffer);
+    ((decoder*)self)->output_buffer = NULL;
+    ((decoder*)self)->output_buffer_position = 0;
+    ((decoder*)self)->current_node = NULL;
+    ((decoder*)self)->current_state = STATE_READING_VALUE;
 }
 
 static uint8_t write_value_to_buffer(decoder* self, uint8_t value)
@@ -41,7 +46,7 @@ static uint8_t write_value_to_buffer(decoder* self, uint8_t value)
     bit_buffer_clear(&self->value_to_write);
     if (self->output_buffer_position >= DECODER_OUTPUT_BUFFER_SIZE)
     {
-        decoder_flush(self);
+        self->base.vtbl.flush((coder*)self);
     }
     return value;
 }
@@ -58,48 +63,48 @@ static void check_current_node(decoder* self)
 static uint8_t write_bit_value_to_buffer(decoder* self)
 {
     uint8_t result = (uint8_t)self->value_to_write.last_item;
-    return write_value_to_buffer(self, result);
+    return write_value_to_buffer((decoder*)self, result);
 }
 
-void decoder_write(decoder* self, const uint8_t* data, uint32_t length)
+void decoder_write(coder* self, const uint8_t* data, uint32_t length)
 {
     for (uint64_t i = 0; i < (length * 8); i++)
     {
-        check_current_node(self);
-        switch (self->current_state)
+        check_current_node((decoder*)self);
+        switch (((decoder*)self)->current_state)
         {
             case STATE_READING_NODE:
             {
-                switch (adaptive_node_get_type(self->current_node))
+                switch (adaptive_node_get_type(((decoder*)self)->current_node))
                 {
                     case NODE_TYPE_INTERNAL:
                     {
                         if (bit_array_get_bit(data, i))
                         {
-                            self->current_node = (adaptive_node*)self->current_node->right;
+                            ((decoder*)self)->current_node = (adaptive_node*)((decoder*)self)->current_node->right;
                         }
                         else
                         {
-                            self->current_node = (adaptive_node*)self->current_node->left;
+                            ((decoder*)self)->current_node = (adaptive_node*)((decoder*)self)->current_node->left;
                         }
                         break;
                     }
                     case NODE_TYPE_NYT:
                     {
-                        self->current_state = STATE_READING_VALUE;
-                        bit_buffer_push_bit(&self->value_to_write, bit_array_get_bit(data, i));
+                        ((decoder*)self)->current_state = STATE_READING_VALUE;
+                        bit_buffer_push_bit(&((decoder*)self)->value_to_write, bit_array_get_bit(data, i));
                         break;
                     }
                     case NODE_TYPE_LEAF:
                     {
-                        adaptive_tree_update(&self->tree, write_value_to_buffer(self, self->current_node->value));
+                        adaptive_tree_update(&self->tree, write_value_to_buffer((decoder*)self, ((decoder*)self)->current_node->value));
                         if (bit_array_get_bit(data, i))
                         {
-                            self->current_node = (adaptive_node*)self->tree.root->right;
+                            ((decoder*)self)->current_node = (adaptive_node*)self->tree.root->right;
                         }
                         else
                         {
-                            self->current_node = (adaptive_node*)self->tree.root->left;
+                            ((decoder*)self)->current_node = (adaptive_node*)self->tree.root->left;
                         }
                         break;
                     }
@@ -109,12 +114,12 @@ void decoder_write(decoder* self, const uint8_t* data, uint32_t length)
             }
             case STATE_READING_VALUE:
             {
-                bit_buffer_push_bit(&self->value_to_write, bit_array_get_bit(data, i));
-                if (bit_buffer_get_size(&self->value_to_write) >= 8)
+                bit_buffer_push_bit(&((decoder*)self)->value_to_write, bit_array_get_bit(data, i));
+                if (bit_buffer_get_size(&((decoder*)self)->value_to_write) >= 8)
                 {
-                    adaptive_tree_update(&self->tree, write_bit_value_to_buffer(self));
-                    self->current_node = self->tree.root;
-                    self->current_state = STATE_READING_NODE;
+                    adaptive_tree_update(&self->tree, write_bit_value_to_buffer((decoder*)self));
+                    ((decoder*)self)->current_node = self->tree.root;
+                    ((decoder*)self)->current_state = STATE_READING_NODE;
                 }
 
                 break;
@@ -128,10 +133,10 @@ void decoder_write(decoder* self, const uint8_t* data, uint32_t length)
     }
 }
 
-void decoder_flush(decoder* self)
+void decoder_flush(coder* self)
 {
-    self->writer(self->output_buffer, self->output_buffer_position, self->writer_params);
-    self->output_buffer_position = 0;
+    self->writer(((decoder*)self)->output_buffer, ((decoder*)self)->output_buffer_position, self->writer_params);
+    ((decoder*)self)->output_buffer_position = 0;
 }
 
 void decoder_final_flush(decoder* self)
@@ -140,5 +145,5 @@ void decoder_final_flush(decoder* self)
     {
         write_value_to_buffer(self, self->current_node->value);
     }
-    decoder_flush(self);
+    self->base.vtbl.flush((coder*)self);
 }
